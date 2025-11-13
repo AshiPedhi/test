@@ -43,10 +43,18 @@ public class ScenarioManager : MonoBehaviour
     public bool IsLastSubStep => currentSubStepIndex >= currentStep.subSteps.Count - 1;
     public bool IsLastStep => currentStepIndex >= currentPhase.steps.Count - 1;
     public bool IsLastPhase => currentPhaseIndex >= currentScenario.phases.Count - 1;
+
+    // 리플렉션 제거를 위한 public 프로퍼티 추가
+    public bool UseCSVData => useCSVData;
+    public string CSVFileName => csvFileName;
+    public ScenarioData PrototypeScenario => prototypeScenario;
     
     private void Awake()
     {
         eventSystem = ScenarioEventSystem.Instance;
+
+        // ServiceLocator에 등록
+        ServiceLocator.Register(this);
     }
     
     /// <summary>
@@ -305,6 +313,9 @@ public class ScenarioManager : MonoBehaviour
     private void OnDestroy()
     {
         eventSystem?.Clear();
+
+        // ServiceLocator에서 등록 해제
+        ServiceLocator.Unregister<ScenarioManager>();
     }
     
     // === Inspector 편집 도우미 ===

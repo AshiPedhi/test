@@ -122,15 +122,15 @@ public class ChunaTrainingController : MonoBehaviour
 
     private void InitializeComponents()
     {
-        // 컴포넌트 자동 찾기
+        // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
         if (handPosePlayer == null)
-            handPosePlayer = FindObjectOfType<HandPosePlayer>();
+            handPosePlayer = ServiceLocator.Get<HandPosePlayer>();
 
         if (guideSystem == null)
-            guideSystem = FindObjectOfType<ChunaEducationGuideSystem>();
+            guideSystem = ServiceLocator.Get<ChunaEducationGuideSystem>();
 
         if (dotTimeline == null)
-            dotTimeline = FindObjectOfType<DotTimelineController>();
+            dotTimeline = ServiceLocator.Get<DotTimelineController>();
     }
 
     private void ValidateComponents()

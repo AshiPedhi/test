@@ -28,7 +28,12 @@ public class ScenarioUIController : MonoBehaviour
     private void Awake()
     {
         eventSystem = ScenarioEventSystem.Instance;
-        scenarioManager = FindObjectOfType<ScenarioManager>();
+
+        // ServiceLocator에 등록
+        ServiceLocator.Register(this);
+
+        // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
+        scenarioManager = ServiceLocator.Get<ScenarioManager>();
 
         // 토글 이벤트 연결
         if (nextToggle != null)

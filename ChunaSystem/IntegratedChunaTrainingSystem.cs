@@ -80,15 +80,15 @@ public class IntegratedChunaTrainingSystem : MonoBehaviour
 
     private void InitializeComponents()
     {
-        // 컴포넌트 자동 찾기
+        // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
         if (scenarioManager == null)
-            scenarioManager = FindObjectOfType<ScenarioManager>();
+            scenarioManager = ServiceLocator.Get<ScenarioManager>();
 
         if (handPosePlayer == null)
-            handPosePlayer = FindObjectOfType<HandPosePlayer>();
+            handPosePlayer = ServiceLocator.Get<HandPosePlayer>();
 
         if (guideSystem == null)
-            guideSystem = FindObjectOfType<ChunaEducationGuideSystem>();
+            guideSystem = ServiceLocator.Get<ChunaEducationGuideSystem>();
 
         eventSystem = ScenarioEventSystem.Instance;
 
@@ -563,36 +563,24 @@ public class IntegratedChunaTrainingSystem : MonoBehaviour
     {
         if (scenarioManager == null) return;
 
-        // 리플렉션으로 ScenarioManager 설정 확인
-        var type = scenarioManager.GetType();
-        var useCSVField = type.GetField("useCSVData",
-            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        // 리플렉션 제거: public 프로퍼티 사용
+        bool useCSV = scenarioManager.UseCSVData;
 
-        if (useCSVField != null)
+        if (useCSV)
         {
-            bool useCSV = (bool)useCSVField.GetValue(scenarioManager);
+            Debug.Log("[IntegratedSystem] 📁 CSV 파일에서 시나리오 로드");
+            Debug.Log($"[IntegratedSystem] CSV 파일: {scenarioManager.CSVFileName}");
+        }
+        else
+        {
+            Debug.Log("[IntegratedSystem] ✏️ Inspector 프로토타입 데이터 사용");
 
-            if (useCSV)
+            // 프로토타입 데이터 정보
+            var prototypeData = scenarioManager.PrototypeScenario;
+            if (prototypeData != null)
             {
-                Debug.Log("[IntegratedSystem] 📁 CSV 파일에서 시나리오 로드");
-            }
-            else
-            {
-                Debug.Log("[IntegratedSystem] ✏️ Inspector 프로토타입 데이터 사용");
-
-                // 프로토타입 데이터 정보
-                var prototypeField = type.GetField("prototypeScenario",
-                    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-
-                if (prototypeField != null)
-                {
-                    var prototypeData = prototypeField.GetValue(scenarioManager) as ScenarioData;
-                    if (prototypeData != null)
-                    {
-                        Debug.Log($"[IntegratedSystem] 시나리오: {prototypeData.scenarioName}");
-                        Debug.Log($"[IntegratedSystem] Phase 수: {prototypeData.phases.Count}");
-                    }
-                }
+                Debug.Log($"[IntegratedSystem] 시나리오: {prototypeData.scenarioName}");
+                Debug.Log($"[IntegratedSystem] Phase 수: {prototypeData.phases.Count}");
             }
         }
     }

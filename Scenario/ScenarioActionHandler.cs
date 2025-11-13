@@ -33,7 +33,10 @@ public class ScenarioActionHandler : MonoBehaviour
     private void Awake()
     {
         eventSystem = ScenarioEventSystem.Instance;
-        
+
+        // ServiceLocator에 등록
+        ServiceLocator.Register(this);
+
         // 동작 핸들러 등록
         RegisterActionHandlers();
     }
@@ -191,7 +194,7 @@ public class ScenarioActionHandler : MonoBehaviour
     /// </summary>
     private string GetCurrentStepName()
     {
-        ScenarioManager manager = FindObjectOfType<ScenarioManager>();
+        ScenarioManager manager = ServiceLocator.Get<ScenarioManager>();
         return manager?.CurrentStep?.stepName ?? "";
     }
 }

@@ -33,16 +33,16 @@ public class ScenarioSystemInitializer : MonoBehaviour
     /// </summary>
     private void InitializeSystem()
     {
-        // 컴포넌트 자동 찾기
+        // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
         if (scenarioManager == null)
-            scenarioManager = FindObjectOfType<ScenarioManager>();
-        
+            scenarioManager = ServiceLocator.Get<ScenarioManager>();
+
         if (uiController == null)
-            uiController = FindObjectOfType<ScenarioUIController>();
-        
+            uiController = ServiceLocator.Get<ScenarioUIController>();
+
         if (actionHandler == null)
-            actionHandler = FindObjectOfType<ScenarioActionHandler>();
-        
+            actionHandler = ServiceLocator.Get<ScenarioActionHandler>();
+
         Debug.Log("[ScenarioSystem] 초기화 완료");
     }
     
