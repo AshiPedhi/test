@@ -1,3 +1,4 @@
+using ChunaVR.Core;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections;

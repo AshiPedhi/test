@@ -1,3 +1,4 @@
+using ChunaVR.Core;
 using UnityEngine;
 
 public class ObjectController : MonoBehaviour

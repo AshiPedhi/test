@@ -1,16 +1,19 @@
+using ChunaVR.Core;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Service Locator 패턴 구현
-/// FindObjectOfType 대신 사용하여 성능 향상
-///
-/// [사용법]
-/// 1. 서비스 등록: ServiceLocator.Register(this);
-/// 2. 서비스 가져오기: var manager = ServiceLocator.Get<ScenarioManager>();
-/// </summary>
-public static class ServiceLocator
+namespace ChunaVR.Core
+{
+    /// <summary>
+    /// Service Locator 패턴 구현
+    /// FindObjectOfType 대신 사용하여 성능 향상
+    ///
+    /// [사용법]
+    /// 1. 서비스 등록: ServiceLocator.Register(this);
+    /// 2. 서비스 가져오기: var manager = ServiceLocator.Get<ScenarioManager>();
+    /// </summary>
+    public static class ServiceLocator
 {
     private static Dictionary<Type, object> services = new Dictionary<Type, object>();
     private static bool isQuitting = false;
@@ -123,24 +126,25 @@ public static class ServiceLocator
     }
 }
 
-/// <summary>
-/// ServiceLocator에 자동 등록하는 베이스 클래스
-///
-/// [사용법]
-/// public class MyManager : ServiceBehaviour<MyManager>
-/// {
-///     // 자동으로 ServiceLocator에 등록됨
-/// }
-/// </summary>
-public abstract class ServiceBehaviour<T> : MonoBehaviour where T : ServiceBehaviour<T>
-{
-    protected virtual void Awake()
+    /// <summary>
+    /// ServiceLocator에 자동 등록하는 베이스 클래스
+    ///
+    /// [사용법]
+    /// public class MyManager : ServiceBehaviour<MyManager>
+    /// {
+    ///     // 자동으로 ServiceLocator에 등록됨
+    /// }
+    /// </summary>
+    public abstract class ServiceBehaviour<T> : MonoBehaviour where T : ServiceBehaviour<T>
     {
-        ServiceLocator.Register(this as T);
-    }
+        protected virtual void Awake()
+        {
+            ServiceLocator.Register(this as T);
+        }
 
-    protected virtual void OnDestroy()
-    {
-        ServiceLocator.Unregister<T>();
+        protected virtual void OnDestroy()
+        {
+            ServiceLocator.Unregister<T>();
+        }
     }
 }
