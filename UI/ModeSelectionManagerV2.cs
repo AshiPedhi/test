@@ -1,4 +1,5 @@
 using ChunaVR.Core;
+using ChunaVR.UI.Events;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -6,7 +7,13 @@ using UnityEngine.UI;
 using TMPro;
 using UnityEngine.SceneManagement;
 
-public class ModeSelectionManagerV2 : MonoBehaviour
+namespace ChunaVR.UI.Controllers
+{
+    /// <summary>
+    /// 모드 선택 매니저 V2
+    /// 순환 참조 제거 및 이벤트 기반 통신 적용
+    /// </summary>
+    public class ModeSelectionManagerV2 : EventManagedBehaviour
 {
     [Header("═══ 상단 모드 선택 ═══")]
     [SerializeField] private Toggle practiceToggle;  // 실습 토글
@@ -34,10 +41,6 @@ public class ModeSelectionManagerV2 : MonoBehaviour
     [SerializeField] private Color normalToggleColor = new Color(0.7f, 0.7f, 0.7f, 1f);  // 일반 토글 색상
     [SerializeField] private Color disabledToggleColor = new Color(0.4f, 0.4f, 0.4f, 0.5f);  // 비활성 토글 색상
 
-    [Header("═══ 외부 컨트롤러 참조 ═══")]
-    [SerializeField] private QuickMenuController quickMenuController;  // 퀵메뉴 컨트롤러 (선택사항)
-    [SerializeField] private ExitPopupController exitPopupController;  // Exit 팝업 컨트롤러
-
     // 선택 상태
     private ModeType selectedMode = ModeType.None;
     private DifficultyType selectedDifficulty = DifficultyType.Intermediate; // 기본값 중급자로 변경
@@ -58,15 +61,29 @@ public class ModeSelectionManagerV2 : MonoBehaviour
 
     void Awake()
     {
+        // ServiceLocator에 등록
+        ServiceLocator.Register(this);
+
         // 초기 난이도 설정 (중급자가 기본)
         selectedDifficulty = DifficultyType.Intermediate;
+    }
 
-        // 컨트롤러 자동 찾기 (할당되지 않은 경우)
-        if (quickMenuController == null)
-            quickMenuController = FindObjectOfType<QuickMenuController>();
+    /// <summary>
+    /// 이벤트 구독 설정
+    /// </summary>
+    protected override void SubscribeToEvents()
+    {
+        // Exit 팝업 이벤트 구독
+        AddSubscription(
+            () => UIEvents.OnExitPopupClosed += HandleExitPopupClosed,
+            () => UIEvents.OnExitPopupClosed -= HandleExitPopupClosed
+        );
+    }
 
-        if (exitPopupController == null)
-            exitPopupController = FindObjectOfType<ExitPopupController>();
+    private void HandleExitPopupClosed()
+    {
+        // Exit 팝업이 닫혔을 때 처리
+        Debug.Log("[ModeSelection] Exit 팝업 닫힘 알림 받음");
     }
 
     void Start()
@@ -356,21 +373,18 @@ public class ModeSelectionManagerV2 : MonoBehaviour
 
     public void OnExitConfirm()
     {
-        // 종료 확인 - 로비로 이동
+        // 종료 확인 - 이벤트 발행
         Debug.Log("종료 확인됨");
+        UIEvents.TriggerExitConfirmed();
         ReturnToLobby();
     }
 
     public void OnExitCancel()
     {
-        // 종료 취소
+        // 종료 취소 - 이벤트 발행
         Debug.Log("종료 취소됨");
-
-        // Exit 팝업이 닫혔음을 QuickMenuController에 알림
-        if (quickMenuController != null)
-        {
-            quickMenuController.OnExitPopupClosed();
-        }
+        UIEvents.TriggerExitCancelled();
+        UIEvents.TriggerExitPopupClosed();
     }
 
     void ReturnToLobby()
@@ -434,13 +448,19 @@ public class ModeSelectionManagerV2 : MonoBehaviour
         Debug.Log("선택 초기화 완료 (중급자로 설정)");
     }
 
-    void OnDestroy()
+    protected override void OnDestroy()
     {
+        base.OnDestroy(); // EventManagedBehaviour의 OnDestroy 호출
+
+        // ServiceLocator에서 등록 해제
+        ServiceLocator.Unregister<ModeSelectionManagerV2>();
+
         // 이벤트 리스너 정리
         if (practiceToggle != null) practiceToggle.onValueChanged.RemoveAllListeners();
         if (evaluationToggle != null) evaluationToggle.onValueChanged.RemoveAllListeners();
         if (beginnerToggle != null) beginnerToggle.onValueChanged.RemoveAllListeners();
         if (intermediateToggle != null) intermediateToggle.onValueChanged.RemoveAllListeners();
         if (advancedToggle != null) advancedToggle.onValueChanged.RemoveAllListeners();
+    }
     }
 }
