@@ -13,8 +13,8 @@ namespace ChunaVR.Editor.HandPose
         [MenuItem("GameObject/VR Hand Tracking/Hand Pose Editor UI", false, 10)]
         public static void CreateHandPoseEditorUI()
         {
-            // Canvas 생성 또는 찾기
-            Canvas canvas = FindObjectOfType<Canvas>();
+            // Canvas 생성 또는 찾기 (Editor 전용 - 한 번만 실행되므로 성능 영향 없음)
+            Canvas canvas = Object.FindObjectOfType<Canvas>();
             if (canvas == null)
             {
                 GameObject canvasGO = new GameObject("Canvas");

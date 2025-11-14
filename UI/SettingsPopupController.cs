@@ -64,12 +64,15 @@ namespace ChunaVR.UI.Popups
     
         void Awake()
         {
+            // ServiceLocator에 등록
+            ServiceLocator.Register(this);
+
             canvasGroup = GetComponent<CanvasGroup>();
             if (canvasGroup == null)
             {
                 canvasGroup = gameObject.AddComponent<CanvasGroup>();
             }
-        
+
             LoadSettings();
             GetAvailableResolutions();
         }
@@ -416,7 +419,8 @@ namespace ChunaVR.UI.Popups
         // 외부에서 설정값 접근
         public static SettingsData GetCurrentSettings()
         {
-            SettingsPopupController controller = FindObjectOfType<SettingsPopupController>();
+            // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
+            SettingsPopupController controller = ServiceLocator.Get<SettingsPopupController>();
             if (controller != null)
             {
                 return controller.currentSettings;

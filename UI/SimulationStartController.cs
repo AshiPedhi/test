@@ -22,10 +22,11 @@ namespace ChunaVR.UI.Controllers
         private ModeSelectionManagerV2 modeManager;
         private bool isReadyToStart = false;
         private Coroutine pulseCoroutine;
-    
+
         void Awake()
         {
-            modeManager = FindObjectOfType<ModeSelectionManagerV2>();
+            // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
+            modeManager = ServiceLocator.Get<ModeSelectionManagerV2>();
         }
     
         void Start()

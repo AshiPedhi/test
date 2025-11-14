@@ -38,11 +38,13 @@ namespace ChunaVR.Training.Data
             {
                 if (instance == null)
                 {
-                    instance = FindObjectOfType<ChunaMotionDataManager>();
+                    // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
+                    instance = ServiceLocator.Get<ChunaMotionDataManager>();
                     if (instance == null)
                     {
                         GameObject go = new GameObject("ChunaMotionDataManager");
                         instance = go.AddComponent<ChunaMotionDataManager>();
+                        ServiceLocator.Register(instance);
                     }
                 }
                 return instance;

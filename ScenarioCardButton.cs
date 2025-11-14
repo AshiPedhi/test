@@ -1,4 +1,5 @@
 using ChunaVR.Core;
+using ChunaVR.Auth.UI;
 using UnityEngine;
 using UnityEngine.UI;
 using ChunaVR.Scenario;
@@ -9,7 +10,7 @@ namespace ChunaVR.UI.Controllers
 
     /// <summary>
     /// 시나리오 카드 버튼 연결 헬퍼
-    /// 
+    ///
     /// [사용 방법]
     /// 1. 각 시나리오 카드(Card_01~05)에 이 스크립트 추가
     /// 2. Inspector에서 Scenario Index 설정 (0~4)
@@ -36,9 +37,10 @@ namespace ChunaVR.UI.Controllers
                 button.onClick.AddListener(OnCardClicked);
             }
 
+            // ServiceLocator를 통한 컴포넌트 가져오기 (FindObjectOfType 제거)
             if (lobbyAuthUI == null)
             {
-                lobbyAuthUI = FindObjectOfType<LobbyAuthUI_Complete>();
+                lobbyAuthUI = ServiceLocator.Get<LobbyAuthUI_Complete>();
 
                 if (lobbyAuthUI == null)
                 {
