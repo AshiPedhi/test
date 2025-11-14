@@ -1,12 +1,16 @@
 using ChunaVR.Core;
+using ChunaVR.Scenario.Events;
+using ChunaVR.Scenario.Data;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// Inspector에서 직접 편집 가능한 시나리오 매니저
-/// </summary>
-public class ScenarioManager : MonoBehaviour
+namespace ChunaVR.Scenario
+{
+    /// <summary>
+    /// Inspector에서 직접 편집 가능한 시나리오 매니저
+    /// </summary>
+    public class ScenarioManager : MonoBehaviour
 {
     [Header("=== 프로토타입 시나리오 데이터 ===")]
     [Tooltip("프로토타입용 시나리오 (Inspector에서 직접 편집)")]
@@ -367,11 +371,12 @@ public class ScenarioManager : MonoBehaviour
         foreach (var phase in prototypeScenario.phases)
         {
             Debug.Log($"  - {phase.phaseName}: {phase.steps.Count} Steps");
-            
+
             foreach (var step in phase.steps)
             {
                 Debug.Log($"    - {step.stepName}: {step.subSteps.Count} SubSteps");
             }
         }
+    }
     }
 }

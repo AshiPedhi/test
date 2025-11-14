@@ -1,12 +1,15 @@
 using ChunaVR.Core;
+using ChunaVR.Scenario.Data;
 using UnityEngine;
 using System.Collections.Generic;
 using System.Linq;
 
-/// <summary>
-/// CSV 파일에서 시나리오 데이터를 로드하는 클래스
-/// </summary>
-public class ScenarioCSVLoader : MonoBehaviour
+namespace ChunaVR.Scenario.CSV
+{
+    /// <summary>
+    /// CSV 파일에서 시나리오 데이터를 로드하는 클래스
+    /// </summary>
+    public class ScenarioCSVLoader : MonoBehaviour
 {
     /// <summary>
     /// Resources 폴더에서 CSV 파일 로드
@@ -202,7 +205,8 @@ public class ScenarioCSVLoader : MonoBehaviour
         }
         
         result.Add(currentValue);
-        
+
         return result.ToArray();
+    }
     }
 }

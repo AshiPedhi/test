@@ -1,13 +1,18 @@
 using ChunaVR.Core;
+using ChunaVR.Scenario;
+using ChunaVR.Scenario.Events;
+using ChunaVR.Scenario.Data;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-/// <summary>
-/// 시나리오 UI 컨트롤러
-/// UI 표시만 전담 (로직 없음)
-/// </summary>
-public class ScenarioUIController : MonoBehaviour
+namespace ChunaVR.UI.Controllers
+{
+    /// <summary>
+    /// 시나리오 UI 컨트롤러
+    /// UI 표시만 전담 (로직 없음)
+    /// </summary>
+    public class ScenarioUIController : MonoBehaviour
 {
     [Header("UI Elements")]
     [SerializeField] private TextMeshProUGUI scenarioNameText;
@@ -154,5 +159,6 @@ public class ScenarioUIController : MonoBehaviour
     {
         if (scenarioNameText != null) scenarioNameText.text = scenarioName;
         if (stepDescriptionText != null) stepDescriptionText.text = description;
+    }
     }
 }

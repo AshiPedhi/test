@@ -3,12 +3,16 @@ using ChunaVR.Core;
 using UnityEditor;
 using UnityEngine;
 
-/// <summary>
-/// ScenarioDataSO용 커스텀 에디터
-/// Inspector에서 더 편하게 편집할 수 있도록 개선
-/// </summary>
-[CustomEditor(typeof(ScenarioDataSO))]
-public class ScenarioDataSOEditor : Editor
+namespace ChunaVR.Editor.Scenario
+{
+    using ChunaVR.Scenario.Data;
+
+    /// <summary>
+    /// ScenarioDataSO용 커스텀 에디터
+    /// Inspector에서 더 편하게 편집할 수 있도록 개선
+    /// </summary>
+    [CustomEditor(typeof(ScenarioDataSO))]
+    public class ScenarioDataSOEditor : Editor
 {
     public override void OnInspectorGUI()
     {
@@ -108,5 +112,6 @@ public class ScenarioDataSOEditor : Editor
         EditorGUILayout.LabelField($"Step: {totalSteps}개");
         EditorGUILayout.LabelField($"SubStep: {totalSubSteps}개");
     }
+}
 }
 #endif

@@ -2,11 +2,13 @@ using ChunaVR.Core;
 using System;
 using UnityEngine;
 
-/// <summary>
-/// 시나리오 이벤트 시스템
-/// 모듈 간 통신을 위한 이벤트 허브
-/// </summary>
-public class ScenarioEventSystem
+namespace ChunaVR.Scenario.Events
+{
+    /// <summary>
+    /// 시나리오 이벤트 시스템
+    /// 모듈 간 통신을 위한 이벤트 허브
+    /// </summary>
+    public class ScenarioEventSystem
 {
     // === 시나리오 진행 이벤트 ===
     public event Action<ScenarioData> OnScenarioStarted;
@@ -129,5 +131,6 @@ public class ScenarioEventSystem
         OnUIUpdateRequested = null;
         OnProgressUpdateRequested = null;
         OnActionRequested = null;
+    }
     }
 }

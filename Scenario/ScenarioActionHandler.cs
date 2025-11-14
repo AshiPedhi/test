@@ -1,12 +1,16 @@
 using ChunaVR.Core;
+using ChunaVR.Scenario.Events;
+using ChunaVR.Scenario.Data;
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// 시나리오 동작 인터페이스
-/// 각 단계별 실행 동작을 정의
-/// </summary>
-public interface IScenarioAction
+namespace ChunaVR.Scenario.Actions
+{
+    /// <summary>
+    /// 시나리오 동작 인터페이스
+    /// 각 단계별 실행 동작을 정의
+    /// </summary>
+    public interface IScenarioAction
 {
     void Execute(SubStepData subStep);
     void OnComplete();
@@ -312,4 +316,5 @@ public class ReEvaluationAction : IScenarioAction
     {
         Debug.Log("[ReEvaluationAction] 재평가 완료");
     }
+}
 }

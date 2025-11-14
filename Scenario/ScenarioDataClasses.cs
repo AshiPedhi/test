@@ -3,11 +3,13 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// SubStep 데이터 (Inspector 편집 가능)
-/// </summary>
-[Serializable]
-public class SubStepData
+namespace ChunaVR.Scenario.Data
+{
+    /// <summary>
+    /// SubStep 데이터 (Inspector 편집 가능)
+    /// </summary>
+    [Serializable]
+    public class SubStepData
 {
     [Header("SubStep 정보")]
     [Tooltip("SubStep 번호")]
@@ -96,4 +98,5 @@ public class ScenarioData
 public class ScenarioCollection
 {
     public List<ScenarioData> scenarios = new List<ScenarioData>();
+}
 }

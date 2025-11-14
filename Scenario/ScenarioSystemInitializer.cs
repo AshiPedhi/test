@@ -1,10 +1,13 @@
 using ChunaVR.Core;
+using ChunaVR.UI.Controllers;
 using UnityEngine;
 
-/// <summary>
-/// 시나리오 시스템 초기화 및 통합
-/// </summary>
-public class ScenarioSystemInitializer : MonoBehaviour
+namespace ChunaVR.Scenario
+{
+    /// <summary>
+    /// 시나리오 시스템 초기화 및 통합
+    /// </summary>
+    public class ScenarioSystemInitializer : MonoBehaviour
 {
     [Header("Core")]
     [SerializeField] private ScenarioManager scenarioManager;
@@ -82,5 +85,6 @@ public class ScenarioSystemInitializer : MonoBehaviour
         {
             scenarioManager.NextSubStep();
         }
+    }
     }
 }

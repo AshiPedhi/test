@@ -1,11 +1,15 @@
 using ChunaVR.Core;
+using ChunaVR.Scenario.Data;
+using ChunaVR.Training;
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// Inspector에서 프로토타입 시나리오를 쉽게 생성하는 헬퍼
-/// </summary>
-public class ScenarioPrototypeBuilder : MonoBehaviour
+namespace ChunaVR.Scenario
+{
+    /// <summary>
+    /// Inspector에서 프로토타입 시나리오를 쉽게 생성하는 헬퍼
+    /// </summary>
+    public class ScenarioPrototypeBuilder : MonoBehaviour
 {
     [Header("=== 빠른 프로토타입 생성 ===")]
     [SerializeField] private ScenarioManager scenarioManager;
@@ -321,5 +325,6 @@ public class ScenarioPrototypeBuilder : MonoBehaviour
         {
             scenarioManager.StartScenario();
         }
+    }
     }
 }

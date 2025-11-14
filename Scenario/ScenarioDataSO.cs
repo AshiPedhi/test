@@ -2,12 +2,14 @@ using ChunaVR.Core;
 using UnityEngine;
 using System.Collections.Generic;
 
-/// <summary>
-/// ScriptableObject 시나리오 데이터
-/// Assets에 저장 가능, 재사용 가능
-/// </summary>
-[CreateAssetMenu(fileName = "New Scenario", menuName = "Chuna/Scenario Data", order = 1)]
-public class ScenarioDataSO : ScriptableObject
+namespace ChunaVR.Scenario.Data
+{
+    /// <summary>
+    /// ScriptableObject 시나리오 데이터
+    /// Assets에 저장 가능, 재사용 가능
+    /// </summary>
+    [CreateAssetMenu(fileName = "New Scenario", menuName = "Chuna/Scenario Data", order = 1)]
+    public class ScenarioDataSO : ScriptableObject
 {
     [Header("시나리오 정보")]
     public int scenarioNo = 1;
@@ -150,4 +152,5 @@ public class ScenarioManagerSO : MonoBehaviour
         scenarioAsset = newScenario;
         StartScenarioFromAsset();
     }
+}
 }
