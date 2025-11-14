@@ -9,496 +9,500 @@ using Oculus.Interaction;
 using System.Text;
 using System.Globalization;
 
-public class HandPoseRecorder : MonoBehaviour
+namespace ChunaVR.PoseData
 {
-    [Header("³ìÈ­ÇÒ ¼Õ ¸ğµ¨")]
-    [SerializeField]
-    private HandVisual leftHandVisual;
 
-    [SerializeField]
-    private HandVisual rightHandVisual;
-
-    [Header("³ìÈ­ ¼³Á¤")]
-    [SerializeField]
-    private string recordingFileName = "HandPose";
-
-    [SerializeField]
-    private float recordInterval = 0.1f;
-
-    [SerializeField]
-    private bool recordLeftHand = true;
-
-    [SerializeField]
-    private bool recordRightHand = true;
-
-    [SerializeField]
-    private Transform referencePoint;
-
-    [Header("Å¸ÀÌ¸Ó ¼³Á¤")]
-    [SerializeField]
-    private bool useTimer = true;  // Å¸ÀÌ¸Ó »ç¿ë ¿©ºÎ
-
-    [SerializeField]
-    private float timerDuration = 5f;  // Å¸ÀÌ¸Ó ½Ã°£ (ÃÊ)
-
-    [SerializeField]
-    private bool showCountdown = true;  // Ä«¿îÆ®´Ù¿î Ç¥½Ã
-
-    [Header("³ìÈ­ »óÅÂ")]
-    [SerializeField]
-    private bool isRecording = false;
-
-    [SerializeField]
-    private bool isWaitingToRecord = false;  // Å¸ÀÌ¸Ó ´ë±â Áß
-
-    [SerializeField]
-    private int recordedFrames = 0;
-
-    [SerializeField]
-    private float remainingTime = 0f;  // ³²Àº Å¸ÀÌ¸Ó ½Ã°£
-
-    private List<FrameData> recordedData = new List<FrameData>();
-    private float lastRecordTime = 0f;
-    private float recordingStartTime = 0f;
-    private int currentFrameIndex = 0;
-
-    private StringBuilder csvBuilder = new StringBuilder(1024 * 100);
-
-    // Å¸ÀÌ¸Ó ÀÌº¥Æ®
-    public event Action<float> OnTimerTick;  // ¸Å ÃÊ¸¶´Ù È£Ãâ (³²Àº ½Ã°£)
-    public event Action OnTimerComplete;  // Å¸ÀÌ¸Ó ¿Ï·á ½Ã È£Ãâ
-    public event Action OnRecordingStarted;  // ³ìÈ­ ½ÃÀÛ ½Ã È£Ãâ
-    public event Action OnRecordingStopped;  // ³ìÈ­ ÁßÁö ½Ã È£Ãâ
-
-    [System.Serializable]
-    private class FrameData
+    public class HandPoseRecorder : MonoBehaviour
     {
-        public int frameIndex;
-        public string handType;
-        public int jointId;
-        public Vector3 localPosition;
-        public Quaternion localRotation;
-        public Vector3 worldPosition;
-        public Quaternion worldRotation;
-        public float timestamp;
-    }
+        [Header("ë…¹í™”í•  ì† ëª¨ë¸")]
+        [SerializeField]
+        private HandVisual leftHandVisual;
 
-    void Start()
-    {
-        if (referencePoint == null)
+        [SerializeField]
+        private HandVisual rightHandVisual;
+
+        [Header("ë…¹í™” ì„¤ì •")]
+        [SerializeField]
+        private string recordingFileName = "HandPose";
+
+        [SerializeField]
+        private float recordInterval = 0.1f;
+
+        [SerializeField]
+        private bool recordLeftHand = true;
+
+        [SerializeField]
+        private bool recordRightHand = true;
+
+        [SerializeField]
+        private Transform referencePoint;
+
+        [Header("íƒ€ì´ë¨¸ ì„¤ì •")]
+        [SerializeField]
+        private bool useTimer = true;  // íƒ€ì´ë¨¸ ì‚¬ìš© ì—¬ë¶€
+
+        [SerializeField]
+        private float timerDuration = 5f;  // íƒ€ì´ë¨¸ ì‹œê°„ (ì´ˆ)
+
+        [SerializeField]
+        private bool showCountdown = true;  // ì¹´ìš´íŠ¸ë‹¤ìš´ í‘œì‹œ
+
+        [Header("ë…¹í™” ìƒíƒœ")]
+        [SerializeField]
+        private bool isRecording = false;
+
+        [SerializeField]
+        private bool isWaitingToRecord = false;  // íƒ€ì´ë¨¸ ëŒ€ê¸° ì¤‘
+
+        [SerializeField]
+        private int recordedFrames = 0;
+
+        [SerializeField]
+        private float remainingTime = 0f;  // ë‚¨ì€ íƒ€ì´ë¨¸ ì‹œê°„
+
+        private List<FrameData> recordedData = new List<FrameData>();
+        private float lastRecordTime = 0f;
+        private float recordingStartTime = 0f;
+        private int currentFrameIndex = 0;
+
+        private StringBuilder csvBuilder = new StringBuilder(1024 * 100);
+
+        // íƒ€ì´ë¨¸ ì´ë²¤íŠ¸
+        public event Action<float> OnTimerTick;  // ë§¤ ì´ˆë§ˆë‹¤ í˜¸ì¶œ (ë‚¨ì€ ì‹œê°„)
+        public event Action OnTimerComplete;  // íƒ€ì´ë¨¸ ì™„ë£Œ ì‹œ í˜¸ì¶œ
+        public event Action OnRecordingStarted;  // ë…¹í™” ì‹œì‘ ì‹œ í˜¸ì¶œ
+        public event Action OnRecordingStopped;  // ë…¹í™” ì¤‘ì§€ ì‹œ í˜¸ì¶œ
+
+        [System.Serializable]
+        private class FrameData
         {
-            Debug.LogWarning("±âÁØÁ¡ÀÌ ¼³Á¤µÇÁö ¾Ê¾Æ ¿ùµå ÁÂÇ¥¸¦ »ç¿ëÇÕ´Ï´Ù.");
+            public int frameIndex;
+            public string handType;
+            public int jointId;
+            public Vector3 localPosition;
+            public Quaternion localRotation;
+            public Vector3 worldPosition;
+            public Quaternion worldRotation;
+            public float timestamp;
         }
-    }
 
-    void Update()
-    {
-        if (isRecording)
+        void Start()
         {
-            if (Time.time - lastRecordTime >= recordInterval)
+            if (referencePoint == null)
             {
-                RecordFrame();
-                lastRecordTime = Time.time;
+                Debug.LogWarning("ê¸°ì¤€ì ì´ ì„¤ì •ë˜ì§€ ì•Šì•„ ì›”ë“œ ì¢Œí‘œë¥¼ ì‚¬ìš©í•©ë‹ˆë‹¤.");
             }
         }
 
-#if UNITY_EDITOR
-        if (Input.GetKeyDown(KeyCode.R))
+        void Update()
         {
             if (isRecording)
-                StopRecording();
-            else
-                StartRecording();
-        }
-#endif
-    }
-
-    // ³ìÈ­ ½ÃÀÛ (Å¸ÀÌ¸Ó Æ÷ÇÔ)
-    public void StartRecording()
-    {
-        if (isRecording)
-        {
-            Debug.LogWarning("ÀÌ¹Ì ³ìÈ­ ÁßÀÔ´Ï´Ù.");
-            return;
-        }
-
-        if (isWaitingToRecord)
-        {
-            Debug.LogWarning("Å¸ÀÌ¸Ó°¡ ÀÌ¹Ì ½ÇÇà ÁßÀÔ´Ï´Ù.");
-            return;
-        }
-
-        if (useTimer && timerDuration > 0)
-        {
-            // Å¸ÀÌ¸Ó ½ÃÀÛ
-            StartCoroutine(StartRecordingWithTimer());
-        }
-        else
-        {
-            // Áï½Ã ³ìÈ­ ½ÃÀÛ
-            StartRecordingImmediately();
-        }
-    }
-
-    // Å¸ÀÌ¸Ó¿Í ÇÔ²² ³ìÈ­ ½ÃÀÛ
-    private IEnumerator StartRecordingWithTimer()
-    {
-        isWaitingToRecord = true;
-        remainingTime = timerDuration;
-
-        Debug.Log($"<color=yellow>{timerDuration}ÃÊ ÈÄ ³ìÈ­ ½ÃÀÛ...</color>");
-
-        // Ä«¿îÆ®´Ù¿î
-        while (remainingTime > 0)
-        {
-            if (showCountdown)
             {
-                Debug.Log($"<color=yellow>³ìÈ­ ½ÃÀÛ±îÁö: {Mathf.Ceil(remainingTime)}ÃÊ</color>");
+                if (Time.time - lastRecordTime >= recordInterval)
+                {
+                    RecordFrame();
+                    lastRecordTime = Time.time;
+                }
             }
 
-            // ÀÌº¥Æ® ¹ß»ı
-            OnTimerTick?.Invoke(remainingTime);
-
-            yield return new WaitForSeconds(1f);
-            remainingTime -= 1f;
+    #if UNITY_EDITOR
+            if (Input.GetKeyDown(KeyCode.R))
+            {
+                if (isRecording)
+                    StopRecording();
+                else
+                    StartRecording();
+            }
+    #endif
         }
 
-        isWaitingToRecord = false;
-        remainingTime = 0f;
-
-        // Å¸ÀÌ¸Ó ¿Ï·á ÀÌº¥Æ®
-        OnTimerComplete?.Invoke();
-
-        // ³ìÈ­ ½ÃÀÛ
-        StartRecordingImmediately();
-    }
-
-    // Áï½Ã ³ìÈ­ ½ÃÀÛ
-    private void StartRecordingImmediately()
-    {
-        recordedData.Clear();
-        currentFrameIndex = 0;
-        recordedFrames = 0;
-        recordingStartTime = Time.time;
-        lastRecordTime = Time.time;
-        isRecording = true;
-
-        Debug.Log($"<color=cyan>³ìÈ­ ½ÃÀÛ!</color>\n" +
-                 $"ÆÄÀÏ¸í: {recordingFileName}.csv\n" +
-                 $"³ìÈ­ °£°İ: {recordInterval}ÃÊ\n" +
-                 $"¿Ş¼Õ: {(recordLeftHand ? "ON" : "OFF")}, ¿À¸¥¼Õ: {(recordRightHand ? "ON" : "OFF")}");
-
-        // ³ìÈ­ ½ÃÀÛ ÀÌº¥Æ®
-        OnRecordingStarted?.Invoke();
-    }
-
-    // Å¸ÀÌ¸Ó Ãë¼Ò
-    public void CancelTimer()
-    {
-        if (isWaitingToRecord)
+        // ë…¹í™” ì‹œì‘ (íƒ€ì´ë¨¸ í¬í•¨)
+        public void StartRecording()
         {
-            StopAllCoroutines();
+            if (isRecording)
+            {
+                Debug.LogWarning("ì´ë¯¸ ë…¹í™” ì¤‘ì…ë‹ˆë‹¤.");
+                return;
+            }
+
+            if (isWaitingToRecord)
+            {
+                Debug.LogWarning("íƒ€ì´ë¨¸ê°€ ì´ë¯¸ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤.");
+                return;
+            }
+
+            if (useTimer && timerDuration > 0)
+            {
+                // íƒ€ì´ë¨¸ ì‹œì‘
+                StartCoroutine(StartRecordingWithTimer());
+            }
+            else
+            {
+                // ì¦‰ì‹œ ë…¹í™” ì‹œì‘
+                StartRecordingImmediately();
+            }
+        }
+
+        // íƒ€ì´ë¨¸ì™€ í•¨ê»˜ ë…¹í™” ì‹œì‘
+        private IEnumerator StartRecordingWithTimer()
+        {
+            isWaitingToRecord = true;
+            remainingTime = timerDuration;
+
+            Debug.Log($"<color=yellow>{timerDuration}ì´ˆ í›„ ë…¹í™” ì‹œì‘...</color>");
+
+            // ì¹´ìš´íŠ¸ë‹¤ìš´
+            while (remainingTime > 0)
+            {
+                if (showCountdown)
+                {
+                    Debug.Log($"<color=yellow>ë…¹í™” ì‹œì‘ê¹Œì§€: {Mathf.Ceil(remainingTime)}ì´ˆ</color>");
+                }
+
+                // ì´ë²¤íŠ¸ ë°œìƒ
+                OnTimerTick?.Invoke(remainingTime);
+
+                yield return new WaitForSeconds(1f);
+                remainingTime -= 1f;
+            }
+
             isWaitingToRecord = false;
             remainingTime = 0f;
-            Debug.Log("<color=red>Å¸ÀÌ¸Ó Ãë¼ÒµÊ</color>");
-        }
-    }
 
-    // ³ìÈ­ ÁßÁö
-    public void StopRecording()
-    {
-        if (!isRecording)
-        {
-            Debug.LogWarning("³ìÈ­ ÁßÀÌ ¾Æ´Õ´Ï´Ù.");
-            return;
+            // íƒ€ì´ë¨¸ ì™„ë£Œ ì´ë²¤íŠ¸
+            OnTimerComplete?.Invoke();
+
+            // ë…¹í™” ì‹œì‘
+            StartRecordingImmediately();
         }
 
-        isRecording = false;
-
-        float recordingDuration = Time.time - recordingStartTime;
-        Debug.Log($"<color=yellow>³ìÈ­ ÁßÁö</color>\n" +
-                 $"³ìÈ­ ½Ã°£: {recordingDuration:F1}ÃÊ\n" +
-                 $"ÇÁ·¹ÀÓ ¼ö: {recordedFrames}\n" +
-                 $"ÀúÀå Áß...");
-
-        SaveToCSV();
-
-        // ³ìÈ­ ÁßÁö ÀÌº¥Æ®
-        OnRecordingStopped?.Invoke();
-    }
-
-    private void RecordFrame()
-    {
-        bool frameRecorded = false;
-
-        if (recordLeftHand && leftHandVisual != null)
+        // ì¦‰ì‹œ ë…¹í™” ì‹œì‘
+        private void StartRecordingImmediately()
         {
-            if (RecordHandData(leftHandVisual, "Left"))
+            recordedData.Clear();
+            currentFrameIndex = 0;
+            recordedFrames = 0;
+            recordingStartTime = Time.time;
+            lastRecordTime = Time.time;
+            isRecording = true;
+
+            Debug.Log($"<color=cyan>ë…¹í™” ì‹œì‘!</color>\n" +
+                     $"íŒŒì¼ëª…: {recordingFileName}.csv\n" +
+                     $"ë…¹í™” ê°„ê²©: {recordInterval}ì´ˆ\n" +
+                     $"ì™¼ì†: {(recordLeftHand ? "ON" : "OFF")}, ì˜¤ë¥¸ì†: {(recordRightHand ? "ON" : "OFF")}");
+
+            // ë…¹í™” ì‹œì‘ ì´ë²¤íŠ¸
+            OnRecordingStarted?.Invoke();
+        }
+
+        // íƒ€ì´ë¨¸ ì·¨ì†Œ
+        public void CancelTimer()
+        {
+            if (isWaitingToRecord)
             {
-                frameRecorded = true;
+                StopAllCoroutines();
+                isWaitingToRecord = false;
+                remainingTime = 0f;
+                Debug.Log("<color=red>íƒ€ì´ë¨¸ ì·¨ì†Œë¨</color>");
             }
         }
 
-        if (recordRightHand && rightHandVisual != null)
+        // ë…¹í™” ì¤‘ì§€
+        public void StopRecording()
         {
-            if (RecordHandData(rightHandVisual, "Right"))
+            if (!isRecording)
             {
-                frameRecorded = true;
-            }
-        }
-
-        if (frameRecorded)
-        {
-            currentFrameIndex++;
-            recordedFrames++;
-
-            if (recordedFrames % 10 == 0)
-            {
-                Debug.Log($"³ìÈ­ Áß... ÇÁ·¹ÀÓ: {recordedFrames}");
-            }
-        }
-    }
-
-    private bool RecordHandData(HandVisual handVisual, string handType)
-    {
-        if (handVisual == null || handVisual.Hand == null)
-            return false;
-
-        if (!handVisual.Hand.IsTrackedDataValid)
-        {
-            Debug.LogWarning($"{handType} ÇÚµå Æ®·¡Å· µ¥ÀÌÅÍ°¡ À¯È¿ÇÏÁö ¾Ê½À´Ï´Ù.");
-            return false;
-        }
-
-        float timestamp = Time.time - recordingStartTime;
-
-        Transform wrist = handVisual.Joints[(int)HandJointId.HandWristRoot];
-        Vector3 wristWorldPos = wrist.position;
-        Quaternion wristWorldRot = wrist.rotation;
-
-        if (referencePoint != null)
-        {
-            wristWorldPos = wrist.position - referencePoint.position;
-        }
-
-        for (int i = 0; i < handVisual.Joints.Count; i++)
-        {
-            Transform joint = handVisual.Joints[i];
-            if (joint == null)
-                continue;
-
-            FrameData frameData = new FrameData
-            {
-                frameIndex = currentFrameIndex,
-                handType = handType,
-                jointId = i,
-                localPosition = joint.localPosition,
-                localRotation = joint.localRotation,
-                timestamp = timestamp
-            };
-
-            if (i == (int)HandJointId.HandWristRoot)
-            {
-                frameData.worldPosition = wristWorldPos;
-                frameData.worldRotation = wristWorldRot;
-            }
-            else
-            {
-                frameData.worldPosition = Vector3.zero;
-                frameData.worldRotation = Quaternion.identity;
+                Debug.LogWarning("ë…¹í™” ì¤‘ì´ ì•„ë‹™ë‹ˆë‹¤.");
+                return;
             }
 
-            recordedData.Add(frameData);
+            isRecording = false;
+
+            float recordingDuration = Time.time - recordingStartTime;
+            Debug.Log($"<color=yellow>ë…¹í™” ì¤‘ì§€</color>\n" +
+                     $"ë…¹í™” ì‹œê°„: {recordingDuration:F1}ì´ˆ\n" +
+                     $"í”„ë ˆì„ ìˆ˜: {recordedFrames}\n" +
+                     $"ì €ì¥ ì¤‘...");
+
+            SaveToCSV();
+
+            // ë…¹í™” ì¤‘ì§€ ì´ë²¤íŠ¸
+            OnRecordingStopped?.Invoke();
         }
 
-        return true;
-    }
-
-    private void SaveToCSV()
-    {
-        if (recordedData.Count == 0)
+        private void RecordFrame()
         {
-            Debug.LogError("ÀúÀåÇÒ µ¥ÀÌÅÍ°¡ ¾ø½À´Ï´Ù.");
-            return;
-        }
+            bool frameRecorded = false;
 
-        string path = Path.Combine(Application.persistentDataPath, recordingFileName + ".csv");
-
-        try
-        {
-            csvBuilder.Clear();
-
-            csvBuilder.AppendLine("FrameIndex,HandType,JointID,LocalPosX,LocalPosY,LocalPosZ," +
-                                 "LocalRotX,LocalRotY,LocalRotZ,LocalRotW,Timestamp," +
-                                 "WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW");
-
-            CultureInfo invariantCulture = CultureInfo.InvariantCulture;
-
-            foreach (FrameData data in recordedData)
+            if (recordLeftHand && leftHandVisual != null)
             {
-                if (data.jointId == (int)HandJointId.HandWristRoot)
+                if (RecordHandData(leftHandVisual, "Left"))
                 {
-                    csvBuilder.AppendFormat(invariantCulture,
-                        "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}\n",
-                        data.frameIndex,
-                        data.handType,
-                        data.jointId,
-                        data.localPosition.x, data.localPosition.y, data.localPosition.z,
-                        data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
-                        data.timestamp,
-                        data.worldPosition.x, data.worldPosition.y, data.worldPosition.z,
-                        data.worldRotation.x, data.worldRotation.y, data.worldRotation.z, data.worldRotation.w
-                    );
+                    frameRecorded = true;
+                }
+            }
+
+            if (recordRightHand && rightHandVisual != null)
+            {
+                if (RecordHandData(rightHandVisual, "Right"))
+                {
+                    frameRecorded = true;
+                }
+            }
+
+            if (frameRecorded)
+            {
+                currentFrameIndex++;
+                recordedFrames++;
+
+                if (recordedFrames % 10 == 0)
+                {
+                    Debug.Log($"ë…¹í™” ì¤‘... í”„ë ˆì„: {recordedFrames}");
+                }
+            }
+        }
+
+        private bool RecordHandData(HandVisual handVisual, string handType)
+        {
+            if (handVisual == null || handVisual.Hand == null)
+                return false;
+
+            if (!handVisual.Hand.IsTrackedDataValid)
+            {
+                Debug.LogWarning($"{handType} í•¸ë“œ íŠ¸ë˜í‚¹ ë°ì´í„°ê°€ ìœ íš¨í•˜ì§€ ì•ŠìŠµë‹ˆë‹¤.");
+                return false;
+            }
+
+            float timestamp = Time.time - recordingStartTime;
+
+            Transform wrist = handVisual.Joints[(int)HandJointId.HandWristRoot];
+            Vector3 wristWorldPos = wrist.position;
+            Quaternion wristWorldRot = wrist.rotation;
+
+            if (referencePoint != null)
+            {
+                wristWorldPos = wrist.position - referencePoint.position;
+            }
+
+            for (int i = 0; i < handVisual.Joints.Count; i++)
+            {
+                Transform joint = handVisual.Joints[i];
+                if (joint == null)
+                    continue;
+
+                FrameData frameData = new FrameData
+                {
+                    frameIndex = currentFrameIndex,
+                    handType = handType,
+                    jointId = i,
+                    localPosition = joint.localPosition,
+                    localRotation = joint.localRotation,
+                    timestamp = timestamp
+                };
+
+                if (i == (int)HandJointId.HandWristRoot)
+                {
+                    frameData.worldPosition = wristWorldPos;
+                    frameData.worldRotation = wristWorldRot;
                 }
                 else
                 {
-                    csvBuilder.AppendFormat(invariantCulture,
-                        "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},,,,,,,\n",
-                        data.frameIndex,
-                        data.handType,
-                        data.jointId,
-                        data.localPosition.x, data.localPosition.y, data.localPosition.z,
-                        data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
-                        data.timestamp
-                    );
+                    frameData.worldPosition = Vector3.zero;
+                    frameData.worldRotation = Quaternion.identity;
                 }
+
+                recordedData.Add(frameData);
             }
 
-            File.WriteAllText(path, csvBuilder.ToString());
-
-            float fileSizeKB = new FileInfo(path).Length / 1024f;
-            Debug.Log($"<color=green>ÀúÀå ¿Ï·á!</color>\n" +
-                     $"°æ·Î: {path}\n" +
-                     $"ÃÑ µ¥ÀÌÅÍ: {recordedData.Count}°³\n" +
-                     $"ÇÁ·¹ÀÓ: {recordedFrames}°³\n" +
-                     $"ÆÄÀÏ Å©±â: {fileSizeKB:F2}KB");
-
-            recordedData.Clear();
+            return true;
         }
-        catch (Exception e)
+
+        private void SaveToCSV()
         {
-            Debug.LogError($"CSV ÀúÀå ½ÇÆĞ: {e.Message}");
+            if (recordedData.Count == 0)
+            {
+                Debug.LogError("ì €ì¥í•  ë°ì´í„°ê°€ ì—†ìŠµë‹ˆë‹¤.");
+                return;
+            }
+
+            string path = Path.Combine(Application.persistentDataPath, recordingFileName + ".csv");
+
+            try
+            {
+                csvBuilder.Clear();
+
+                csvBuilder.AppendLine("FrameIndex,HandType,JointID,LocalPosX,LocalPosY,LocalPosZ," +
+                                     "LocalRotX,LocalRotY,LocalRotZ,LocalRotW,Timestamp," +
+                                     "WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW");
+
+                CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+
+                foreach (FrameData data in recordedData)
+                {
+                    if (data.jointId == (int)HandJointId.HandWristRoot)
+                    {
+                        csvBuilder.AppendFormat(invariantCulture,
+                            "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},{11},{12},{13},{14},{15},{16},{17}\n",
+                            data.frameIndex,
+                            data.handType,
+                            data.jointId,
+                            data.localPosition.x, data.localPosition.y, data.localPosition.z,
+                            data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
+                            data.timestamp,
+                            data.worldPosition.x, data.worldPosition.y, data.worldPosition.z,
+                            data.worldRotation.x, data.worldRotation.y, data.worldRotation.z, data.worldRotation.w
+                        );
+                    }
+                    else
+                    {
+                        csvBuilder.AppendFormat(invariantCulture,
+                            "{0},{1},{2},{3},{4},{5},{6},{7},{8},{9},{10},,,,,,,\n",
+                            data.frameIndex,
+                            data.handType,
+                            data.jointId,
+                            data.localPosition.x, data.localPosition.y, data.localPosition.z,
+                            data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
+                            data.timestamp
+                        );
+                    }
+                }
+
+                File.WriteAllText(path, csvBuilder.ToString());
+
+                float fileSizeKB = new FileInfo(path).Length / 1024f;
+                Debug.Log($"<color=green>ì €ì¥ ì™„ë£Œ!</color>\n" +
+                         $"ê²½ë¡œ: {path}\n" +
+                         $"ì´ ë°ì´í„°: {recordedData.Count}ê°œ\n" +
+                         $"í”„ë ˆì„: {recordedFrames}ê°œ\n" +
+                         $"íŒŒì¼ í¬ê¸°: {fileSizeKB:F2}KB");
+
+                recordedData.Clear();
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"CSV ì €ì¥ ì‹¤íŒ¨: {e.Message}");
+            }
         }
-    }
 
-    public void PauseRecording()
-    {
-        if (!isRecording)
-            return;
-
-        isRecording = false;
-        Debug.Log("³ìÈ­ ÀÏ½ÃÁ¤Áö");
-    }
-
-    public void ResumeRecording()
-    {
-        if (isRecording)
-            return;
-
-        isRecording = true;
-        lastRecordTime = Time.time;
-        Debug.Log("³ìÈ­ Àç°³");
-    }
-
-    public void CancelRecording()
-    {
-        isRecording = false;
-        recordedData.Clear();
-        currentFrameIndex = 0;
-        recordedFrames = 0;
-        Debug.Log("³ìÈ­ Ãë¼ÒµÊ");
-    }
-
-    // Getter ¸Ş¼­µåµé
-    public bool IsRecording()
-    {
-        return isRecording;
-    }
-
-    public bool IsWaitingToRecord()
-    {
-        return isWaitingToRecord;
-    }
-
-    public int GetRecordedFrames()
-    {
-        return recordedFrames;
-    }
-
-    public float GetRecordingDuration()
-    {
-        if (isRecording)
-            return Time.time - recordingStartTime;
-        return 0f;
-    }
-
-    public float GetRemainingTime()
-    {
-        return remainingTime;
-    }
-
-    // Setter ¸Ş¼­µåµé
-    public void SetRecordingSettings(bool left, bool right, float interval)
-    {
-        recordLeftHand = left;
-        recordRightHand = right;
-        recordInterval = Mathf.Max(0.01f, interval);
-        Debug.Log($"³ìÈ­ ¼³Á¤ º¯°æ - ¿Ş¼Õ: {left}, ¿À¸¥¼Õ: {right}, °£°İ: {interval}ÃÊ");
-    }
-
-    public void SetFileName(string fileName)
-    {
-        recordingFileName = fileName;
-        Debug.Log($"ÆÄÀÏ¸í ¼³Á¤: {fileName}.csv");
-    }
-
-    public void SetReferencePoint(Transform reference)
-    {
-        referencePoint = reference;
-        Debug.Log($"±âÁØÁ¡ ¼³Á¤: {(reference != null ? reference.name : "¾øÀ½")}");
-    }
-
-    public void SetTimerDuration(float duration)
-    {
-        timerDuration = Mathf.Max(0f, duration);
-        Debug.Log($"Å¸ÀÌ¸Ó ½Ã°£ ¼³Á¤: {timerDuration}ÃÊ");
-    }
-
-    public void SetUseTimer(bool use)
-    {
-        useTimer = use;
-        Debug.Log($"Å¸ÀÌ¸Ó »ç¿ë: {(use ? "ON" : "OFF")}");
-    }
-
-    public void SetShowCountdown(bool show)
-    {
-        showCountdown = show;
-    }
-
-    public string GetStatusText()
-    {
-        if (isWaitingToRecord)
+        public void PauseRecording()
         {
-            return $"³ìÈ­ ´ë±â Áß...\n{Mathf.Ceil(remainingTime)}ÃÊ ÈÄ ½ÃÀÛ";
-        }
-        else if (isRecording)
-        {
-            float duration = Time.time - recordingStartTime;
-            return $"³ìÈ­ Áß...\n½Ã°£: {duration:F1}ÃÊ\nÇÁ·¹ÀÓ: {recordedFrames}";
-        }
-        else
-        {
-            return "´ë±â Áß";
-        }
-    }
+            if (!isRecording)
+                return;
 
-    void OnApplicationQuit()
-    {
-        if (isRecording && recordedData.Count > 0)
-        {
-            Debug.Log("Á¾·á °¨Áö, ÀÚµ¿ ÀúÀå Áß...");
             isRecording = false;
-            SaveToCSV();
+            Debug.Log("ë…¹í™” ì¼ì‹œì •ì§€");
         }
-    }
+
+        public void ResumeRecording()
+        {
+            if (isRecording)
+                return;
+
+            isRecording = true;
+            lastRecordTime = Time.time;
+            Debug.Log("ë…¹í™” ì¬ê°œ");
+        }
+
+        public void CancelRecording()
+        {
+            isRecording = false;
+            recordedData.Clear();
+            currentFrameIndex = 0;
+            recordedFrames = 0;
+            Debug.Log("ë…¹í™” ì·¨ì†Œë¨");
+        }
+
+        // Getter ë©”ì„œë“œë“¤
+        public bool IsRecording()
+        {
+            return isRecording;
+        }
+
+        public bool IsWaitingToRecord()
+        {
+            return isWaitingToRecord;
+        }
+
+        public int GetRecordedFrames()
+        {
+            return recordedFrames;
+        }
+
+        public float GetRecordingDuration()
+        {
+            if (isRecording)
+                return Time.time - recordingStartTime;
+            return 0f;
+        }
+
+        public float GetRemainingTime()
+        {
+            return remainingTime;
+        }
+
+        // Setter ë©”ì„œë“œë“¤
+        public void SetRecordingSettings(bool left, bool right, float interval)
+        {
+            recordLeftHand = left;
+            recordRightHand = right;
+            recordInterval = Mathf.Max(0.01f, interval);
+            Debug.Log($"ë…¹í™” ì„¤ì • ë³€ê²½ - ì™¼ì†: {left}, ì˜¤ë¥¸ì†: {right}, ê°„ê²©: {interval}ì´ˆ");
+        }
+
+        public void SetFileName(string fileName)
+        {
+            recordingFileName = fileName;
+            Debug.Log($"íŒŒì¼ëª… ì„¤ì •: {fileName}.csv");
+        }
+
+        public void SetReferencePoint(Transform reference)
+        {
+            referencePoint = reference;
+            Debug.Log($"ê¸°ì¤€ì  ì„¤ì •: {(reference != null ? reference.name : "ì—†ìŒ")}");
+        }
+
+        public void SetTimerDuration(float duration)
+        {
+            timerDuration = Mathf.Max(0f, duration);
+            Debug.Log($"íƒ€ì´ë¨¸ ì‹œê°„ ì„¤ì •: {timerDuration}ì´ˆ");
+        }
+
+        public void SetUseTimer(bool use)
+        {
+            useTimer = use;
+            Debug.Log($"íƒ€ì´ë¨¸ ì‚¬ìš©: {(use ? "ON" : "OFF")}");
+        }
+
+        public void SetShowCountdown(bool show)
+        {
+            showCountdown = show;
+        }
+
+        public string GetStatusText()
+        {
+            if (isWaitingToRecord)
+            {
+                return $"ë…¹í™” ëŒ€ê¸° ì¤‘...\n{Mathf.Ceil(remainingTime)}ì´ˆ í›„ ì‹œì‘";
+            }
+            else if (isRecording)
+            {
+                float duration = Time.time - recordingStartTime;
+                return $"ë…¹í™” ì¤‘...\nì‹œê°„: {duration:F1}ì´ˆ\ní”„ë ˆì„: {recordedFrames}";
+            }
+            else
+            {
+                return "ëŒ€ê¸° ì¤‘";
+            }
+        }
+
+        void OnApplicationQuit()
+        {
+            if (isRecording && recordedData.Count > 0)
+            {
+                Debug.Log("ì¢…ë£Œ ê°ì§€, ìë™ ì €ì¥ ì¤‘...");
+                isRecording = false;
+                SaveToCSV();
+            }
+        }
+    }}
 }

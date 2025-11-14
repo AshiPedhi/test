@@ -1,154 +1,158 @@
 using ChunaVR.Core;
 using UnityEngine;
 
-public class ObjectController : MonoBehaviour
+namespace ChunaVR.PoseData
 {
-    // ÀÎ½ºÆåÅÍ¿¡¼­ ÇÒ´çÇÒ Å¸°Ù ¿ÀºêÁ§Æ® (ÀÌµ¿/È¸Àü¿ë)
-    public GameObject targetObject;
 
-    // Ãß°¡·Î ÁöÁ¤ÇÒ ¿ÀºêÁ§Æ® 3°³ (On/Off Åä±Û¿ë)
-    public GameObject additionalObject1;
-    public GameObject additionalObject2;
-    public GameObject additionalObject3;
-
-    // ÀÌµ¿ ¼Óµµ (À¯´Ö/ÃÊ, ÀÎ½ºÆåÅÍ¿¡¼­ Á¶Á¤ °¡´É)
-    public float moveSpeed = 5f;
-
-    // È¸Àü ¼Óµµ (µµ/ÃÊ, ÀÎ½ºÆåÅÍ¿¡¼­ Á¶Á¤ °¡´É)
-    public float rotateSpeed = 90f;
-
-    // ÇöÀç ¼±ÅÃµÈ ¿ÀºêÁ§Æ® ÃßÀû (0: none, 1: Object1, 2: Object2)
-    private int selectedAdditional = 0;
-
-    // ´©¸£°í ÀÖ´Â µ¿¾È ÀÌµ¿/È¸Àü ÇÃ·¡±× (°¢ ¹æÇâº°)
-    private bool isMovingUp = false;
-    private bool isMovingDown = false;
-    private bool isMovingForward = false;
-    private bool isMovingBackward = false;
-    private bool isRotatingPositive = false;
-    private bool isRotatingNegative = false;
-
-    // Update ¸Ş¼­µå: ´©¸£°í ÀÖ´Â µ¿¾È Áö¼Ó ÀÌµ¿/È¸Àü Ã³¸®
-    private void Update()
+    public class ObjectController : MonoBehaviour
     {
-        if (targetObject == null) return;
+        // ì¸ìŠ¤í™í„°ì—ì„œ í• ë‹¹í•  íƒ€ê²Ÿ ì˜¤ë¸Œì íŠ¸ (ì´ë™/íšŒì „ìš©)
+        public GameObject targetObject;
 
-        float delta = Time.deltaTime;
+        // ì¶”ê°€ë¡œ ì§€ì •í•  ì˜¤ë¸Œì íŠ¸ 3ê°œ (On/Off í† ê¸€ìš©)
+        public GameObject additionalObject1;
+        public GameObject additionalObject2;
+        public GameObject additionalObject3;
 
-        // ÀÌµ¿ Ã³¸® (±Û·Î¹ú Ãà ±âÁØ)
-        if (isMovingUp)
+        // ì´ë™ ì†ë„ (ìœ ë‹›/ì´ˆ, ì¸ìŠ¤í™í„°ì—ì„œ ì¡°ì • ê°€ëŠ¥)
+        public float moveSpeed = 5f;
+
+        // íšŒì „ ì†ë„ (ë„/ì´ˆ, ì¸ìŠ¤í™í„°ì—ì„œ ì¡°ì • ê°€ëŠ¥)
+        public float rotateSpeed = 90f;
+
+        // í˜„ì¬ ì„ íƒëœ ì˜¤ë¸Œì íŠ¸ ì¶”ì  (0: none, 1: Object1, 2: Object2)
+        private int selectedAdditional = 0;
+
+        // ëˆ„ë¥´ê³  ìˆëŠ” ë™ì•ˆ ì´ë™/íšŒì „ í”Œë˜ê·¸ (ê° ë°©í–¥ë³„)
+        private bool isMovingUp = false;
+        private bool isMovingDown = false;
+        private bool isMovingForward = false;
+        private bool isMovingBackward = false;
+        private bool isRotatingPositive = false;
+        private bool isRotatingNegative = false;
+
+        // Update ë©”ì„œë“œ: ëˆ„ë¥´ê³  ìˆëŠ” ë™ì•ˆ ì§€ì† ì´ë™/íšŒì „ ì²˜ë¦¬
+        private void Update()
         {
-            targetObject.transform.Translate(Vector3.up * moveSpeed * delta, Space.World);
-        }
-        if (isMovingDown)
-        {
-            targetObject.transform.Translate(Vector3.down * moveSpeed * delta, Space.World);
-        }
-        if (isMovingForward)
-        {
-            targetObject.transform.Translate(Vector3.forward * moveSpeed * delta, Space.World);
-        }
-        if (isMovingBackward)
-        {
-            targetObject.transform.Translate(Vector3.back * moveSpeed * delta, Space.World);
-        }
+            if (targetObject == null) return;
 
-        // È¸Àü Ã³¸® (·ÎÄÃ XÃà ±âÁØ)
-        if (isRotatingPositive)
-        {
-            targetObject.transform.Rotate(Vector3.right * rotateSpeed * delta);
-        }
-        if (isRotatingNegative)
-        {
-            targetObject.transform.Rotate(Vector3.right * -rotateSpeed * delta);
-        }
-    }
+            float delta = Time.deltaTime;
 
-    // ¸ğµç ÀÌµ¿/È¸Àü ÁßÁö (Pointer Up ÀÌº¥Æ®¿¡¼­ È£Ãâ)
-    public void StopAllMovement()
-    {
-        isMovingUp = false;
-        isMovingDown = false;
-        isMovingForward = false;
-        isMovingBackward = false;
-        isRotatingPositive = false;
-        isRotatingNegative = false;
-    }
+            // ì´ë™ ì²˜ë¦¬ (ê¸€ë¡œë²Œ ì¶• ê¸°ì¤€)
+            if (isMovingUp)
+            {
+                targetObject.transform.Translate(Vector3.up * moveSpeed * delta, Space.World);
+            }
+            if (isMovingDown)
+            {
+                targetObject.transform.Translate(Vector3.down * moveSpeed * delta, Space.World);
+            }
+            if (isMovingForward)
+            {
+                targetObject.transform.Translate(Vector3.forward * moveSpeed * delta, Space.World);
+            }
+            if (isMovingBackward)
+            {
+                targetObject.transform.Translate(Vector3.back * moveSpeed * delta, Space.World);
+            }
 
-    // Up ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartMoveUp()
-    {
-        StopAllMovement(); // ´Ù¸¥ µ¿ÀÛ ÁßÁö (¿É¼Ç: µ¿½Ã¿¡ Çã¿ëÇÏ·Á¸é Á¦°Å)
-        isMovingUp = true;
-    }
-
-    // Down ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartMoveDown()
-    {
-        StopAllMovement();
-        isMovingDown = true;
-    }
-
-    // Forward ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartMoveForward()
-    {
-        StopAllMovement();
-        isMovingForward = true;
-    }
-
-    // Backward ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartMoveBackward()
-    {
-        StopAllMovement();
-        isMovingBackward = true;
-    }
-
-    // Rotate Positive ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartRotatePositive()
-    {
-        StopAllMovement();
-        isRotatingPositive = true;
-    }
-
-    // Rotate Negative ¹öÆ° ´­¸² ½ÃÀÛ
-    public void StartRotateNegative()
-    {
-        StopAllMovement();
-        isRotatingNegative = true;
-    }
-
-    // Ãß°¡ ¿ÀºêÁ§Æ® Åä±Û (ÇÏ³ªÀÇ ¹öÆ°À¸·Î ÀüÈ¯: Object1 ¡ê Object2)
-    public void ToggleAdditionalObjects()
-    {
-        if (additionalObject1 == null || additionalObject2 == null || additionalObject3 == null)
-        {
-            Debug.LogWarning("One or both additional objects are not assigned!");
-            return;
+            // íšŒì „ ì²˜ë¦¬ (ë¡œì»¬ Xì¶• ê¸°ì¤€)
+            if (isRotatingPositive)
+            {
+                targetObject.transform.Rotate(Vector3.right * rotateSpeed * delta);
+            }
+            if (isRotatingNegative)
+            {
+                targetObject.transform.Rotate(Vector3.right * -rotateSpeed * delta);
+            }
         }
 
-        if (selectedAdditional == 1)
+        // ëª¨ë“  ì´ë™/íšŒì „ ì¤‘ì§€ (Pointer Up ì´ë²¤íŠ¸ì—ì„œ í˜¸ì¶œ)
+        public void StopAllMovement()
         {
-            // ÇöÀç Object1 On ¡æ Object2 OnÀ¸·Î ÀüÈ¯
-            additionalObject1.SetActive(false);
-            additionalObject2.SetActive(true);
-            selectedAdditional = 2;
-            Debug.Log("Switched to Additional Object 2 (On), Object 1 Off");
+            isMovingUp = false;
+            isMovingDown = false;
+            isMovingForward = false;
+            isMovingBackward = false;
+            isRotatingPositive = false;
+            isRotatingNegative = false;
         }
-        else if (selectedAdditional ==2)
+
+        // Up ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartMoveUp()
         {
-            // ÇöÀç Object2 On ¶Ç´Â none ¡æ Object1 OnÀ¸·Î ÀüÈ¯
-            additionalObject2.SetActive(false);
-            additionalObject3.SetActive(true);
-            selectedAdditional = 3;
-            Debug.Log("Switched to Additional Object 3 (On), Object 2 Off");
+            StopAllMovement(); // ë‹¤ë¥¸ ë™ì‘ ì¤‘ì§€ (ì˜µì…˜: ë™ì‹œì— í—ˆìš©í•˜ë ¤ë©´ ì œê±°)
+            isMovingUp = true;
         }
-        else
+
+        // Down ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartMoveDown()
         {
-            // ÇöÀç Object2 On ¶Ç´Â none ¡æ Object1 OnÀ¸·Î ÀüÈ¯
-            additionalObject1.SetActive(true);
-            additionalObject3.SetActive(false);
-            selectedAdditional = 1;
-            Debug.Log("Switched to Additional Object 1 (On), Object 3 Off");
+            StopAllMovement();
+            isMovingDown = true;
         }
-    }
+
+        // Forward ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartMoveForward()
+        {
+            StopAllMovement();
+            isMovingForward = true;
+        }
+
+        // Backward ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartMoveBackward()
+        {
+            StopAllMovement();
+            isMovingBackward = true;
+        }
+
+        // Rotate Positive ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartRotatePositive()
+        {
+            StopAllMovement();
+            isRotatingPositive = true;
+        }
+
+        // Rotate Negative ë²„íŠ¼ ëˆŒë¦¼ ì‹œì‘
+        public void StartRotateNegative()
+        {
+            StopAllMovement();
+            isRotatingNegative = true;
+        }
+
+        // ì¶”ê°€ ì˜¤ë¸Œì íŠ¸ í† ê¸€ (í•˜ë‚˜ì˜ ë²„íŠ¼ìœ¼ë¡œ ì „í™˜: Object1 â†” Object2)
+        public void ToggleAdditionalObjects()
+        {
+            if (additionalObject1 == null || additionalObject2 == null || additionalObject3 == null)
+            {
+                Debug.LogWarning("One or both additional objects are not assigned!");
+                return;
+            }
+
+            if (selectedAdditional == 1)
+            {
+                // í˜„ì¬ Object1 On â†’ Object2 Onìœ¼ë¡œ ì „í™˜
+                additionalObject1.SetActive(false);
+                additionalObject2.SetActive(true);
+                selectedAdditional = 2;
+                Debug.Log("Switched to Additional Object 2 (On), Object 1 Off");
+            }
+            else if (selectedAdditional ==2)
+            {
+                // í˜„ì¬ Object2 On ë˜ëŠ” none â†’ Object1 Onìœ¼ë¡œ ì „í™˜
+                additionalObject2.SetActive(false);
+                additionalObject3.SetActive(true);
+                selectedAdditional = 3;
+                Debug.Log("Switched to Additional Object 3 (On), Object 2 Off");
+            }
+            else
+            {
+                // í˜„ì¬ Object2 On ë˜ëŠ” none â†’ Object1 Onìœ¼ë¡œ ì „í™˜
+                additionalObject1.SetActive(true);
+                additionalObject3.SetActive(false);
+                selectedAdditional = 1;
+                Debug.Log("Switched to Additional Object 1 (On), Object 3 Off");
+            }
+        }
+    }}
 }

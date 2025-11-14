@@ -3,137 +3,141 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
-using Oculus.Interaction.Body.Input;  // BoneId ³×ÀÓ½ºÆäÀÌ½º
-using System.Reflection;  // ¸®ÇÃ·º¼Ç
+using Oculus.Interaction.Body.Input;  // BoneId ë„¤ì„ìŠ¤í˜ì´ìŠ¤
+using System.Reflection;  // ë¦¬í”Œë ‰ì…˜
 using static OVRSkeleton;
 
-public class PosePlayer : MonoBehaviour
+namespace ChunaVR.PoseData
 {
-    [SerializeField]
-    private OVRCustomSkeleton customSkeleton;  // Inspector¿¡¼­ OVRCustomSkeleton ÇÒ´ç
 
-    [SerializeField]
-    private float playbackInterval = 0.1f;  // Àç»ı °£°İ (ÃÊ)
-
-    private List<PoseFrame> loadedSequence = new List<PoseFrame>();  // ºÒ·¯¿Â ½ÃÄö½º
-    private bool isPlaying = false;
-    private int currentPlaybackIndex = 0;
-    private float lastPlaybackTime = 0f;
-
-    [System.Serializable]
-    private class PoseFrame
+    public class PosePlayer : MonoBehaviour
     {
-        public Dictionary<int, PoseData> localPoses = new Dictionary<int, PoseData>();
-        public Dictionary<int, PoseData> fromRootPoses = new Dictionary<int, PoseData>();
-        public float timestamp;
-    }
+        [SerializeField]
+        private OVRCustomSkeleton customSkeleton;  // Inspectorì—ì„œ OVRCustomSkeleton í• ë‹¹
 
-    [System.Serializable]
-    private class PoseData
-    {
-        public Vector3 position;
-        public Quaternion rotation;
-    }
+        [SerializeField]
+        private float playbackInterval = 0.1f;  // ì¬ìƒ ê°„ê²© (ì´ˆ)
 
-    void Update()
-    {
-        if (isPlaying && currentPlaybackIndex < loadedSequence.Count)
+        private List<PoseFrame> loadedSequence = new List<PoseFrame>();  // ë¶ˆëŸ¬ì˜¨ ì‹œí€€ìŠ¤
+        private bool isPlaying = false;
+        private int currentPlaybackIndex = 0;
+        private float lastPlaybackTime = 0f;
+
+        [System.Serializable]
+        private class PoseFrame
         {
-            if (Time.time - lastPlaybackTime >= playbackInterval)
+            public Dictionary<int, PoseData> localPoses = new Dictionary<int, PoseData>();
+            public Dictionary<int, PoseData> fromRootPoses = new Dictionary<int, PoseData>();
+            public float timestamp;
+        }
+
+        [System.Serializable]
+        private class PoseData
+        {
+            public Vector3 position;
+            public Quaternion rotation;
+        }
+
+        void Update()
+        {
+            if (isPlaying && currentPlaybackIndex < loadedSequence.Count)
             {
-                ApplyFrameToBones();
-                currentPlaybackIndex++;
-                lastPlaybackTime = Time.time;
-                if (currentPlaybackIndex >= loadedSequence.Count)
+                if (Time.time - lastPlaybackTime >= playbackInterval)
                 {
-                    isPlaying = false;
-                    Debug.Log("Àç»ı ¿Ï·á.");
+                    ApplyFrameToBones();
+                    currentPlaybackIndex++;
+                    lastPlaybackTime = Time.time;
+                    if (currentPlaybackIndex >= loadedSequence.Count)
+                    {
+                        isPlaying = false;
+                        Debug.Log("ì¬ìƒ ì™„ë£Œ.");
+                    }
                 }
             }
         }
-    }
 
-    // csv ºÒ·¯¿Í Àç»ı ½ÃÀÛ (csvFileName ÀÔ·Â, ¿¹: "MySequence")
-    public void StartPlaybackFromCSV(string csvFileName)
-    {
-        string path = Path.Combine(Application.persistentDataPath, csvFileName + ".csv");
-        if (!File.Exists(path))
+        // csv ë¶ˆëŸ¬ì™€ ì¬ìƒ ì‹œì‘ (csvFileName ì…ë ¥, ì˜ˆ: "MySequence")
+        public void StartPlaybackFromCSV(string csvFileName)
         {
-            Debug.LogError("CSV ÆÄÀÏ ¾øÀ½.");
-            return;
-        }
-
-        string[] lines = File.ReadAllLines(path);
-        if (lines.Length < 2)
-        {
-            Debug.LogError("CSV µ¥ÀÌÅÍ ºÎÁ·.");
-            return;
-        }
-
-        loadedSequence.Clear();
-        PoseFrame currentFrame = null;
-        int lastFrameIndex = -1;
-
-        for (int i = 1; i < lines.Length; i++)  // Çì´õ ½ºÅµ
-        {
-            string[] values = lines[i].Split(',');
-            int frameIndex = int.Parse(values[0]);
-            float timestamp = float.Parse(values[1]);
-            int jointId = int.Parse(values[2]);
-            Vector3 localPos = new Vector3(float.Parse(values[3]), float.Parse(values[4]), float.Parse(values[5]));
-            Quaternion localRot = new Quaternion(float.Parse(values[6]), float.Parse(values[7]), float.Parse(values[8]), float.Parse(values[9]));
-            Vector3 fromRootPos = new Vector3(float.Parse(values[10]), float.Parse(values[11]), float.Parse(values[12]));
-            Quaternion fromRootRot = new Quaternion(float.Parse(values[13]), float.Parse(values[14]), float.Parse(values[15]), float.Parse(values[16]));
-
-            if (frameIndex != lastFrameIndex)
+            string path = Path.Combine(Application.persistentDataPath, csvFileName + ".csv");
+            if (!File.Exists(path))
             {
-                if (currentFrame != null) loadedSequence.Add(currentFrame);
-                currentFrame = new PoseFrame { timestamp = timestamp };
-                lastFrameIndex = frameIndex;
+                Debug.LogError("CSV íŒŒì¼ ì—†ìŒ.");
+                return;
             }
 
-            currentFrame.localPoses[jointId] = new PoseData { position = localPos, rotation = localRot };
-            currentFrame.fromRootPoses[jointId] = new PoseData { position = fromRootPos, rotation = fromRootRot };
-        }
-
-        if (currentFrame != null) loadedSequence.Add(currentFrame);
-
-        if (loadedSequence.Count == 0)
-        {
-            Debug.LogError("CSV ÆÄ½Ì ½ÇÆĞ.");
-            return;
-        }
-
-        isPlaying = true;
-        currentPlaybackIndex = 0;
-        lastPlaybackTime = Time.time;
-        ApplyFrameToBones();  // Ã¹ ÇÁ·¹ÀÓ Àû¿ë
-        Debug.Log("Àç»ı ½ÃÀÛ.");
-    }
-
-    // ÇÁ·¹ÀÓ µ¥ÀÌÅÍ CustomBones¿¡ Àû¿ë
-    private void ApplyFrameToBones()
-    {
-        PoseFrame frame = loadedSequence[currentPlaybackIndex];
-        foreach (var jointId in frame.localPoses.Keys)
-        {
-            BoneId boneId = (BoneId)jointId;
-            MethodInfo getBoneMethod = typeof(OVRCustomSkeleton).GetMethod("GetBoneTransform", BindingFlags.Instance | BindingFlags.NonPublic);
-            if (getBoneMethod != null)
+            string[] lines = File.ReadAllLines(path);
+            if (lines.Length < 2)
             {
-                Transform boneTransform = (Transform)getBoneMethod.Invoke(customSkeleton, new object[] { boneId });
-                if (boneTransform != null)
+                Debug.LogError("CSV ë°ì´í„° ë¶€ì¡±.");
+                return;
+            }
+
+            loadedSequence.Clear();
+            PoseFrame currentFrame = null;
+            int lastFrameIndex = -1;
+
+            for (int i = 1; i < lines.Length; i++)  // í—¤ë” ìŠ¤í‚µ
+            {
+                string[] values = lines[i].Split(',');
+                int frameIndex = int.Parse(values[0]);
+                float timestamp = float.Parse(values[1]);
+                int jointId = int.Parse(values[2]);
+                Vector3 localPos = new Vector3(float.Parse(values[3]), float.Parse(values[4]), float.Parse(values[5]));
+                Quaternion localRot = new Quaternion(float.Parse(values[6]), float.Parse(values[7]), float.Parse(values[8]), float.Parse(values[9]));
+                Vector3 fromRootPos = new Vector3(float.Parse(values[10]), float.Parse(values[11]), float.Parse(values[12]));
+                Quaternion fromRootRot = new Quaternion(float.Parse(values[13]), float.Parse(values[14]), float.Parse(values[15]), float.Parse(values[16]));
+
+                if (frameIndex != lastFrameIndex)
                 {
-                    PoseData local = frame.localPoses[jointId];
-                    boneTransform.localPosition = local.position;
-                    boneTransform.localRotation = local.rotation;
+                    if (currentFrame != null) loadedSequence.Add(currentFrame);
+                    currentFrame = new PoseFrame { timestamp = timestamp };
+                    lastFrameIndex = frameIndex;
+                }
+
+                currentFrame.localPoses[jointId] = new PoseData { position = localPos, rotation = localRot };
+                currentFrame.fromRootPoses[jointId] = new PoseData { position = fromRootPos, rotation = fromRootRot };
+            }
+
+            if (currentFrame != null) loadedSequence.Add(currentFrame);
+
+            if (loadedSequence.Count == 0)
+            {
+                Debug.LogError("CSV íŒŒì‹± ì‹¤íŒ¨.");
+                return;
+            }
+
+            isPlaying = true;
+            currentPlaybackIndex = 0;
+            lastPlaybackTime = Time.time;
+            ApplyFrameToBones();  // ì²« í”„ë ˆì„ ì ìš©
+            Debug.Log("ì¬ìƒ ì‹œì‘.");
+        }
+
+        // í”„ë ˆì„ ë°ì´í„° CustomBonesì— ì ìš©
+        private void ApplyFrameToBones()
+        {
+            PoseFrame frame = loadedSequence[currentPlaybackIndex];
+            foreach (var jointId in frame.localPoses.Keys)
+            {
+                BoneId boneId = (BoneId)jointId;
+                MethodInfo getBoneMethod = typeof(OVRCustomSkeleton).GetMethod("GetBoneTransform", BindingFlags.Instance | BindingFlags.NonPublic);
+                if (getBoneMethod != null)
+                {
+                    Transform boneTransform = (Transform)getBoneMethod.Invoke(customSkeleton, new object[] { boneId });
+                    if (boneTransform != null)
+                    {
+                        PoseData local = frame.localPoses[jointId];
+                        boneTransform.localPosition = local.position;
+                        boneTransform.localRotation = local.rotation;
+                    }
+                }
+                else
+                {
+                    Debug.LogError("GetBoneTransform ë©”ì„œë“œë¥¼ ì°¾ì„ ìˆ˜ ì—†ìŒ.");
                 }
             }
-            else
-            {
-                Debug.LogError("GetBoneTransform ¸Ş¼­µå¸¦ Ã£À» ¼ö ¾øÀ½.");
-            }
+            Debug.Log($"í”„ë ˆì„ {currentPlaybackIndex} ì ìš©.");
         }
-        Debug.Log($"ÇÁ·¹ÀÓ {currentPlaybackIndex} Àû¿ë.");
-    }
+    }}
 }

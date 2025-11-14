@@ -783,554 +783,563 @@ public class HandPoseDataEditor : MonoBehaviour
         try
         {
             using (StreamWriter writer = new StreamWriter(path))
-            {
-                // 헤더
-                writer.WriteLine("FrameIndex,HandType,JointID,LocalPosX,LocalPosY,LocalPosZ," +
-                               "LocalRotX,LocalRotY,LocalRotZ,LocalRotW,Timestamp," +
-                               "WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW," +
-                               "IsKeyframe,Interval");
+using ChunaVR.PoseData;
+using ChunaVR.PoseData;
 
-                CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+namespace ChunaVR.Editor.HandPose
+{
 
-                // 데이터
-                foreach (var data in editedData.OrderBy(d => d.timestamp).ThenBy(d => d.handType).ThenBy(d => d.jointId))
-                {
-                    string line = string.Format(invariantCulture,
-                        "{0},{1},{2},{3:F4},{4:F4},{5:F4},{6:F4},{7:F4},{8:F4},{9:F4},{10:F3}," +
-                        "{11:F4},{12:F4},{13:F4},{14:F4},{15:F4},{16:F4},{17:F4},{18},{19:F3}",
-                        data.frameIndex,
-                        data.handType,
-                        data.jointId,
-                        data.localPosition.x, data.localPosition.y, data.localPosition.z,
-                        data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
-                        data.timestamp,
-                        data.hasWorldData ? data.worldPosition.x : 0,
-                        data.hasWorldData ? data.worldPosition.y : 0,
-                        data.hasWorldData ? data.worldPosition.z : 0,
-                        data.hasWorldData ? data.worldRotation.x : 0,
-                        data.hasWorldData ? data.worldRotation.y : 0,
-                        data.hasWorldData ? data.worldRotation.z : 0,
-                        data.hasWorldData ? data.worldRotation.w : 0,
-                        data.isKeyframe ? 1 : 0,
-                        data.recordInterval
-                    );
-
-                    writer.WriteLine(line);
-                }
-            }
-
-            float fileSizeKB = new FileInfo(path).Length / 1024f;
-
-            Debug.Log($"<color=green>파일 저장 완료!</color>\n" +
-                     $"파일명: {fileName}.csv\n" +
-                     $"크기: {fileSizeKB:F2}KB\n" +
-                     $"데이터: {editedData.Count}개\n" +
-                     $"프레임: {totalFrames}개");
-
-            currentFileName = fileName;
-            hasUnsavedChanges = false;
-
-            RefreshFileList();
-            UpdateButtonStates();
-
-            OnFileSaved?.Invoke(fileName);
-        }
-        catch (Exception e)
-        {
-            Debug.LogError($"파일 저장 실패: {e.Message}");
-        }
-    }
-
-    private void ExportSelection()
+    namespace ChunaVR.Editor.HandPose
     {
-        // 현재 선택 구간만 별도 파일로 저장
-        if (editedData.Count == 0) return;
-
-        var exportData = editedData.Where(d => d.timestamp >= startTime && d.timestamp <= endTime).ToList();
-
-        // 임시로 editedData 교체
-        var tempData = editedData;
-        editedData = exportData;
-
-        // 타임스탬프 조정
-        float offset = startTime;
-        foreach (var data in editedData)
-        {
-            data.timestamp -= offset;
-        }
-
-        // 파일명 설정
-        string originalName = fileNameInput.text;
-        fileNameInput.text = $"{currentFileName}_selection_{startTime:F1}-{endTime:F1}";
-
-        SaveEditedData();
-
-        // 원래 데이터로 복구
-        editedData = tempData;
-        fileNameInput.text = originalName;
-    }
-
-    private void Undo()
-    {
-        if (undoStack.Count == 0) return;
-
-        EditAction action = undoStack.Pop();
-
-        // 현재 상태를 redo 스택에 저장
-        EditAction redoAction = new EditAction
-        {
-            type = action.type,
-            previousData = new List<HandPoseData>(editedData),
-            newData = new List<HandPoseData>(action.previousData),
-            previousStart = startTime,
-            previousEnd = endTime,
-            newStart = action.previousStart,
-            newEnd = action.previousEnd
-        };
-        redoStack.Push(redoAction);
-
-        // 이전 상태로 복원
-        editedData = new List<HandPoseData>(action.previousData);
-
-        if (action.type == EditAction.ActionType.Trim)
-        {
-            totalDuration = action.previousEnd - action.previousStart;
-            startTime = action.previousStart;
-            endTime = action.previousEnd;
-        }
-
-        // UI 업데이트
-        totalFrames = editedData.Select(d => d.frameIndex).Distinct().Count();
-        UpdateTimeline();
-        CreateKeyframeMarkers();
-        UpdateFileInfo();
-        UpdateButtonStates();
-
-        hasUnsavedChanges = true;
-
-        Debug.Log("실행 취소 완료");
-    }
-
-    private void Redo()
-    {
-        if (redoStack.Count == 0) return;
-
-        EditAction action = redoStack.Pop();
-
-        // 현재 상태를 undo 스택에 저장
-        EditAction undoAction = new EditAction
-        {
-            type = action.type,
-            previousData = new List<HandPoseData>(editedData),
-            newData = new List<HandPoseData>(action.newData),
-            previousStart = startTime,
-            previousEnd = endTime,
-            newStart = action.newStart,
-            newEnd = action.newEnd
-        };
-        undoStack.Push(undoAction);
-
-        // 다시 실행
-        editedData = new List<HandPoseData>(action.newData);
-
-        if (action.type == EditAction.ActionType.Trim)
-        {
-            totalDuration = action.newEnd - action.newStart;
-            startTime = action.newStart;
-            endTime = action.newEnd;
-        }
-
-        // UI 업데이트
-        totalFrames = editedData.Select(d => d.frameIndex).Distinct().Count();
-        UpdateTimeline();
-        CreateKeyframeMarkers();
-        UpdateFileInfo();
-        UpdateButtonStates();
-
-        hasUnsavedChanges = true;
-
-        Debug.Log("다시 실행 완료");
-    }
-
-    private void SeekToNextFrame()
-    {
-        if (editedData.Count == 0) return;
-
-        var nextFrame = editedData.Where(d => d.timestamp > currentTime)
-                                  .OrderBy(d => d.timestamp)
-                                  .FirstOrDefault();
-
-        if (nextFrame != null)
-        {
-            currentTime = nextFrame.timestamp;
-            timelineSlider.value = currentTime;
-        }
-    }
-
-    private void SeekToPreviousFrame()
-    {
-        if (editedData.Count == 0) return;
-
-        var prevFrame = editedData.Where(d => d.timestamp < currentTime)
-                                  .OrderByDescending(d => d.timestamp)
-                                  .FirstOrDefault();
-
-        if (prevFrame != null)
-        {
-            currentTime = prevFrame.timestamp;
-            timelineSlider.value = currentTime;
-        }
-    }
-
-    private void SeekToNextKeyframe()
-    {
-        if (keyframeIndices.Count == 0) return;
-
-        foreach (int index in keyframeIndices.OrderBy(i => i))
-        {
-            var frame = editedData.FirstOrDefault(d => d.frameIndex == index && d.timestamp > currentTime);
-            if (frame != null)
-            {
-                currentTime = frame.timestamp;
-                timelineSlider.value = currentTime;
-                break;
-            }
-        }
-    }
-
-    private void SeekToPreviousKeyframe()
-    {
-        if (keyframeIndices.Count == 0) return;
-
-        foreach (int index in keyframeIndices.OrderByDescending(i => i))
-        {
-            var frame = editedData.FirstOrDefault(d => d.frameIndex == index && d.timestamp < currentTime);
-            if (frame != null)
-            {
-                currentTime = frame.timestamp;
-                timelineSlider.value = currentTime;
-                break;
-            }
-        }
-    }
-
-    private void SetStartPointToCurrent()
-    {
-        startTime = currentTime;
-        startPointSlider.value = startTime;
-        UpdateSelectedRangeVisual();
-        UpdateRangeDisplay();
-    }
-
-    private void SetEndPointToCurrent()
-    {
-        endTime = currentTime;
-        endPointSlider.value = endTime;
-        UpdateSelectedRangeVisual();
-        UpdateRangeDisplay();
-    }
-
-    private void SetPlaybackSpeed(float speed)
-    {
-        playbackSpeedSlider.value = speed;
-        OnPlaybackSpeedChanged(speed);
-    }
-
-    private float FindNearestKeyframeTime(float time)
-    {
-        if (keyframeIndices.Count == 0) return time;
-
-        float nearestTime = time;
-        float minDistance = float.MaxValue;
-
-        foreach (int index in keyframeIndices)
-        {
-            var frame = editedData.FirstOrDefault(d => d.frameIndex == index);
-            if (frame != null)
-            {
-                float distance = Mathf.Abs(frame.timestamp - time);
-                if (distance < minDistance)
-                {
-                    minDistance = distance;
-                    nearestTime = frame.timestamp;
-                }
-            }
-        }
-
-        return nearestTime;
-    }
-
-    private void UpdateGhostHands()
-    {
-        if (!showGhostHandToggle.isOn || editedData.Count == 0) return;
-
-        float ghostTime = currentTime + ghostHandOffsetSlider.value;
-
-        // Ghost 시간의 데이터 찾기
-        var ghostFrames = editedData.Where(d => Mathf.Abs(d.timestamp - ghostTime) < 0.05f).ToList();
-
-        // Ghost 핸드에 적용 (구현 필요)
-        // TODO: Ghost 핸드 포즈 적용
-    }
-
-    private void UpdateTimeDisplay()
-    {
-        if (currentTimeText != null)
-        {
-            currentTimeText.text = $"{currentTime:F2}s / F{currentFrame}";
-        }
-
-        if (totalDurationText != null)
-        {
-            totalDurationText.text = $"총 {totalDuration:F2}초";
-        }
-    }
-
-    private void UpdateRangeDisplay()
-    {
-        if (selectedRangeText != null)
-        {
-            float duration = endTime - startTime;
-            int startFrame = editedData.Where(d => d.timestamp <= startTime)
-                                      .Select(d => d.frameIndex)
-                                      .DefaultIfEmpty(0)
-                                      .Max();
-            int endFrame = editedData.Where(d => d.timestamp <= endTime)
-                                    .Select(d => d.frameIndex)
-                                    .DefaultIfEmpty(totalFrames)
-                                    .Max();
-
-            selectedRangeText.text = $"구간: {startTime:F2}s ~ {endTime:F2}s ({duration:F2}s)\n" +
-                                    $"프레임: {startFrame} ~ {endFrame}";
-        }
-    }
-
-    private void UpdateFileInfo()
-    {
-        if (frameInfoText != null)
-        {
-            frameInfoText.text = $"프레임: {totalFrames}\n" +
-                               $"키프레임: {keyframeIndices.Count}";
-        }
-
-        if (fileSizeText != null)
-        {
-            // 예상 파일 크기 계산
-            float estimatedSize = editedData.Count * 100f / 1024f; // 대략적인 계산
-            fileSizeText.text = $"예상 크기: {estimatedSize:F1}KB";
-        }
-
-        if (compressionInfoText != null)
-        {
-            float avgInterval = totalDuration / totalFrames;
-            float compressionRatio = (1f - (totalFrames / (totalDuration * 60f))) * 100f;
-            compressionInfoText.text = $"평균 간격: {avgInterval:F3}s\n" +
-                                      $"압축률: {compressionRatio:F1}%";
-        }
-    }
-
-    private void UpdateButtonStates()
-    {
-        // 재생/일시정지 버튼
-        if (playPauseButton != null)
-        {
-            var buttonText = playPauseButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (buttonText != null)
-            {
-                buttonText.text = isPlaying ? "⏸" : "▶";
-            }
-        }
-
-        // 실행 취소/다시 실행
-        if (undoButton != null)
-        {
-            undoButton.interactable = undoStack.Count > 0;
-        }
-
-        if (redoButton != null)
-        {
-            redoButton.interactable = redoStack.Count > 0;
-        }
-
-        // 저장 버튼
-        if (saveButton != null)
-        {
-            var buttonText = saveButton.GetComponentInChildren<TextMeshProUGUI>();
-            if (buttonText != null && hasUnsavedChanges)
-            {
-                buttonText.text = "저장*";
-            }
-        }
-
-        // 편집 버튼들
-        bool hasData = editedData.Count > 0;
-        if (trimButton != null) trimButton.interactable = hasData;
-        if (exportButton != null) exportButton.interactable = hasData;
-    }
-
-    private void RefreshFileList()
-    {
-        if (fileListDropdown == null) return;
-
-        fileListDropdown.ClearOptions();
-
-        string[] files = Directory.GetFiles(Application.persistentDataPath, "*.csv");
-        List<string> fileNames = new List<string>();
-
-        foreach (string file in files)
-        {
-            string fileName = Path.GetFileNameWithoutExtension(file);
-            fileNames.Add(fileName);
-        }
-
-        if (fileNames.Count > 0)
-        {
-            fileListDropdown.AddOptions(fileNames);
-        }
-        else
-        {
-            fileListDropdown.AddOptions(new List<string> { "파일 없음" });
-        }
-    }
-
-    private void LoadSelectedFile()
-    {
-        if (fileListDropdown == null || fileListDropdown.options.Count == 0) return;
-
-        string selectedFile = fileListDropdown.options[fileListDropdown.value].text;
-
-        if (selectedFile != "파일 없음")
-        {
-            LoadCSVFile(selectedFile);
-        }
-    }
-
-    private void DeleteSelectedFile()
-    {
-        if (fileListDropdown == null || fileListDropdown.options.Count == 0) return;
-
-        string selectedFile = fileListDropdown.options[fileListDropdown.value].text;
-
-        if (selectedFile != "파일 없음")
-        {
-            string path = Path.Combine(Application.persistentDataPath, selectedFile + ".csv");
-
-            if (File.Exists(path))
-            {
-                File.Delete(path);
-                Debug.Log($"파일 삭제됨: {selectedFile}");
-                RefreshFileList();
-            }
-        }
-    }
-
-    private void OnLoopToggleChanged(bool value)
-    {
-        if (handPosePlayer != null)
-        {
-            // Player에 루프 설정 전달
-        }
-    }
-
-    private void OnSnapToggleChanged(bool value)
-    {
-        // 스냅 설정 변경 시 현재 위치 재조정
-        if (value)
-        {
-            currentTime = FindNearestKeyframeTime(currentTime);
-            timelineSlider.value = currentTime;
-        }
-    }
-
-    private void OnGhostHandToggleChanged(bool value)
-    {
-        if (leftHandGhost != null)
-        {
-            leftHandGhost.gameObject.SetActive(value);
-        }
-
-        if (rightHandGhost != null)
-        {
-            rightHandGhost.gameObject.SetActive(value);
-        }
-
-        if (value)
-        {
-            UpdateGhostHands();
-        }
-    }
-
-    private void OnPlaybackProgress(float progress)
-    {
-        // 플레이어로부터 진행률 업데이트 받기
-        if (!isPlaying) return;
-
-        currentTime = progress * totalDuration;
-        UpdateTimeDisplay();
-    }
-
-    private void OnPlaybackCompleted()
-    {
-        if (!loopToggle.isOn)
-        {
-            StopPlayback();
-        }
-    }
-
-    void OnDestroy()
-    {
-        // 이벤트 해제
-        if (handPosePlayer != null)
-        {
-            // 이벤트가 있는지 확인하고 해제
-            var progressEvent = handPosePlayer.GetType().GetEvent("OnPlaybackProgress");
-            if (progressEvent != null)
-            {
-                var field = handPosePlayer.GetType().GetField("OnPlaybackProgress",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-                if (field != null)
-                {
-                    var eventDelegate = field.GetValue(handPosePlayer) as System.Delegate;
-                    if (eventDelegate != null)
                     {
-                        foreach (var d in eventDelegate.GetInvocationList())
+                        // 헤더
+                        writer.WriteLine("FrameIndex,HandType,JointID,LocalPosX,LocalPosY,LocalPosZ," +
+                                       "LocalRotX,LocalRotY,LocalRotZ,LocalRotW,Timestamp," +
+                                       "WorldPosX,WorldPosY,WorldPosZ,WorldRotX,WorldRotY,WorldRotZ,WorldRotW," +
+                                       "IsKeyframe,Interval");
+
+                        CultureInfo invariantCulture = CultureInfo.InvariantCulture;
+
+                        // 데이터
+                        foreach (var data in editedData.OrderBy(d => d.timestamp).ThenBy(d => d.handType).ThenBy(d => d.jointId))
                         {
-                            if (d.Target == this)
+                            string line = string.Format(invariantCulture,
+                                "{0},{1},{2},{3:F4},{4:F4},{5:F4},{6:F4},{7:F4},{8:F4},{9:F4},{10:F3}," +
+                                "{11:F4},{12:F4},{13:F4},{14:F4},{15:F4},{16:F4},{17:F4},{18},{19:F3}",
+                                data.frameIndex,
+                                data.handType,
+                                data.jointId,
+                                data.localPosition.x, data.localPosition.y, data.localPosition.z,
+                                data.localRotation.x, data.localRotation.y, data.localRotation.z, data.localRotation.w,
+                                data.timestamp,
+                                data.hasWorldData ? data.worldPosition.x : 0,
+                                data.hasWorldData ? data.worldPosition.y : 0,
+                                data.hasWorldData ? data.worldPosition.z : 0,
+                                data.hasWorldData ? data.worldRotation.x : 0,
+                                data.hasWorldData ? data.worldRotation.y : 0,
+                                data.hasWorldData ? data.worldRotation.z : 0,
+                                data.hasWorldData ? data.worldRotation.w : 0,
+                                data.isKeyframe ? 1 : 0,
+                                data.recordInterval
+                            );
+
+                            writer.WriteLine(line);
+                        }
+                    }
+
+                    float fileSizeKB = new FileInfo(path).Length / 1024f;
+
+                    Debug.Log($"<color=green>파일 저장 완료!</color>\n" +
+                             $"파일명: {fileName}.csv\n" +
+                             $"크기: {fileSizeKB:F2}KB\n" +
+                             $"데이터: {editedData.Count}개\n" +
+                             $"프레임: {totalFrames}개");
+
+                    currentFileName = fileName;
+                    hasUnsavedChanges = false;
+
+                    RefreshFileList();
+                    UpdateButtonStates();
+
+                    OnFileSaved?.Invoke(fileName);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError($"파일 저장 실패: {e.Message}");
+                }
+            }
+
+            private void ExportSelection()
+            {
+                // 현재 선택 구간만 별도 파일로 저장
+                if (editedData.Count == 0) return;
+
+                var exportData = editedData.Where(d => d.timestamp >= startTime && d.timestamp <= endTime).ToList();
+
+                // 임시로 editedData 교체
+                var tempData = editedData;
+                editedData = exportData;
+
+                // 타임스탬프 조정
+                float offset = startTime;
+                foreach (var data in editedData)
+                {
+                    data.timestamp -= offset;
+                }
+
+                // 파일명 설정
+                string originalName = fileNameInput.text;
+                fileNameInput.text = $"{currentFileName}_selection_{startTime:F1}-{endTime:F1}";
+
+                SaveEditedData();
+
+                // 원래 데이터로 복구
+                editedData = tempData;
+                fileNameInput.text = originalName;
+            }
+
+            private void Undo()
+            {
+                if (undoStack.Count == 0) return;
+
+                EditAction action = undoStack.Pop();
+
+                // 현재 상태를 redo 스택에 저장
+                EditAction redoAction = new EditAction
+                {
+                    type = action.type,
+                    previousData = new List<HandPoseData>(editedData),
+                    newData = new List<HandPoseData>(action.previousData),
+                    previousStart = startTime,
+                    previousEnd = endTime,
+                    newStart = action.previousStart,
+                    newEnd = action.previousEnd
+                };
+                redoStack.Push(redoAction);
+
+                // 이전 상태로 복원
+                editedData = new List<HandPoseData>(action.previousData);
+
+                if (action.type == EditAction.ActionType.Trim)
+                {
+                    totalDuration = action.previousEnd - action.previousStart;
+                    startTime = action.previousStart;
+                    endTime = action.previousEnd;
+                }
+
+                // UI 업데이트
+                totalFrames = editedData.Select(d => d.frameIndex).Distinct().Count();
+                UpdateTimeline();
+                CreateKeyframeMarkers();
+                UpdateFileInfo();
+                UpdateButtonStates();
+
+                hasUnsavedChanges = true;
+
+                Debug.Log("실행 취소 완료");
+            }
+
+            private void Redo()
+            {
+                if (redoStack.Count == 0) return;
+
+                EditAction action = redoStack.Pop();
+
+                // 현재 상태를 undo 스택에 저장
+                EditAction undoAction = new EditAction
+                {
+                    type = action.type,
+                    previousData = new List<HandPoseData>(editedData),
+                    newData = new List<HandPoseData>(action.newData),
+                    previousStart = startTime,
+                    previousEnd = endTime,
+                    newStart = action.newStart,
+                    newEnd = action.newEnd
+                };
+                undoStack.Push(undoAction);
+
+                // 다시 실행
+                editedData = new List<HandPoseData>(action.newData);
+
+                if (action.type == EditAction.ActionType.Trim)
+                {
+                    totalDuration = action.newEnd - action.newStart;
+                    startTime = action.newStart;
+                    endTime = action.newEnd;
+                }
+
+                // UI 업데이트
+                totalFrames = editedData.Select(d => d.frameIndex).Distinct().Count();
+                UpdateTimeline();
+                CreateKeyframeMarkers();
+                UpdateFileInfo();
+                UpdateButtonStates();
+
+                hasUnsavedChanges = true;
+
+                Debug.Log("다시 실행 완료");
+            }
+
+            private void SeekToNextFrame()
+            {
+                if (editedData.Count == 0) return;
+
+                var nextFrame = editedData.Where(d => d.timestamp > currentTime)
+                                          .OrderBy(d => d.timestamp)
+                                          .FirstOrDefault();
+
+                if (nextFrame != null)
+                {
+                    currentTime = nextFrame.timestamp;
+                    timelineSlider.value = currentTime;
+                }
+            }
+
+            private void SeekToPreviousFrame()
+            {
+                if (editedData.Count == 0) return;
+
+                var prevFrame = editedData.Where(d => d.timestamp < currentTime)
+                                          .OrderByDescending(d => d.timestamp)
+                                          .FirstOrDefault();
+
+                if (prevFrame != null)
+                {
+                    currentTime = prevFrame.timestamp;
+                    timelineSlider.value = currentTime;
+                }
+            }
+
+            private void SeekToNextKeyframe()
+            {
+                if (keyframeIndices.Count == 0) return;
+
+                foreach (int index in keyframeIndices.OrderBy(i => i))
+                {
+                    var frame = editedData.FirstOrDefault(d => d.frameIndex == index && d.timestamp > currentTime);
+                    if (frame != null)
+                    {
+                        currentTime = frame.timestamp;
+                        timelineSlider.value = currentTime;
+                        break;
+                    }
+                }
+            }
+
+            private void SeekToPreviousKeyframe()
+            {
+                if (keyframeIndices.Count == 0) return;
+
+                foreach (int index in keyframeIndices.OrderByDescending(i => i))
+                {
+                    var frame = editedData.FirstOrDefault(d => d.frameIndex == index && d.timestamp < currentTime);
+                    if (frame != null)
+                    {
+                        currentTime = frame.timestamp;
+                        timelineSlider.value = currentTime;
+                        break;
+                    }
+                }
+            }
+
+            private void SetStartPointToCurrent()
+            {
+                startTime = currentTime;
+                startPointSlider.value = startTime;
+                UpdateSelectedRangeVisual();
+                UpdateRangeDisplay();
+            }
+
+            private void SetEndPointToCurrent()
+            {
+                endTime = currentTime;
+                endPointSlider.value = endTime;
+                UpdateSelectedRangeVisual();
+                UpdateRangeDisplay();
+            }
+
+            private void SetPlaybackSpeed(float speed)
+            {
+                playbackSpeedSlider.value = speed;
+                OnPlaybackSpeedChanged(speed);
+            }
+
+            private float FindNearestKeyframeTime(float time)
+            {
+                if (keyframeIndices.Count == 0) return time;
+
+                float nearestTime = time;
+                float minDistance = float.MaxValue;
+
+                foreach (int index in keyframeIndices)
+                {
+                    var frame = editedData.FirstOrDefault(d => d.frameIndex == index);
+                    if (frame != null)
+                    {
+                        float distance = Mathf.Abs(frame.timestamp - time);
+                        if (distance < minDistance)
+                        {
+                            minDistance = distance;
+                            nearestTime = frame.timestamp;
+                        }
+                    }
+                }
+
+                return nearestTime;
+            }
+
+            private void UpdateGhostHands()
+            {
+                if (!showGhostHandToggle.isOn || editedData.Count == 0) return;
+
+                float ghostTime = currentTime + ghostHandOffsetSlider.value;
+
+                // Ghost 시간의 데이터 찾기
+                var ghostFrames = editedData.Where(d => Mathf.Abs(d.timestamp - ghostTime) < 0.05f).ToList();
+
+                // Ghost 핸드에 적용 (구현 필요)
+                // TODO: Ghost 핸드 포즈 적용
+            }
+
+            private void UpdateTimeDisplay()
+            {
+                if (currentTimeText != null)
+                {
+                    currentTimeText.text = $"{currentTime:F2}s / F{currentFrame}";
+                }
+
+                if (totalDurationText != null)
+                {
+                    totalDurationText.text = $"총 {totalDuration:F2}초";
+                }
+            }
+
+            private void UpdateRangeDisplay()
+            {
+                if (selectedRangeText != null)
+                {
+                    float duration = endTime - startTime;
+                    int startFrame = editedData.Where(d => d.timestamp <= startTime)
+                                              .Select(d => d.frameIndex)
+                                              .DefaultIfEmpty(0)
+                                              .Max();
+                    int endFrame = editedData.Where(d => d.timestamp <= endTime)
+                                            .Select(d => d.frameIndex)
+                                            .DefaultIfEmpty(totalFrames)
+                                            .Max();
+
+                    selectedRangeText.text = $"구간: {startTime:F2}s ~ {endTime:F2}s ({duration:F2}s)\n" +
+                                            $"프레임: {startFrame} ~ {endFrame}";
+                }
+            }
+
+            private void UpdateFileInfo()
+            {
+                if (frameInfoText != null)
+                {
+                    frameInfoText.text = $"프레임: {totalFrames}\n" +
+                                       $"키프레임: {keyframeIndices.Count}";
+                }
+
+                if (fileSizeText != null)
+                {
+                    // 예상 파일 크기 계산
+                    float estimatedSize = editedData.Count * 100f / 1024f; // 대략적인 계산
+                    fileSizeText.text = $"예상 크기: {estimatedSize:F1}KB";
+                }
+
+                if (compressionInfoText != null)
+                {
+                    float avgInterval = totalDuration / totalFrames;
+                    float compressionRatio = (1f - (totalFrames / (totalDuration * 60f))) * 100f;
+                    compressionInfoText.text = $"평균 간격: {avgInterval:F3}s\n" +
+                                              $"압축률: {compressionRatio:F1}%";
+                }
+            }
+
+            private void UpdateButtonStates()
+            {
+                // 재생/일시정지 버튼
+                if (playPauseButton != null)
+                {
+                    var buttonText = playPauseButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (buttonText != null)
+                    {
+                        buttonText.text = isPlaying ? "⏸" : "▶";
+                    }
+                }
+
+                // 실행 취소/다시 실행
+                if (undoButton != null)
+                {
+                    undoButton.interactable = undoStack.Count > 0;
+                }
+
+                if (redoButton != null)
+                {
+                    redoButton.interactable = redoStack.Count > 0;
+                }
+
+                // 저장 버튼
+                if (saveButton != null)
+                {
+                    var buttonText = saveButton.GetComponentInChildren<TextMeshProUGUI>();
+                    if (buttonText != null && hasUnsavedChanges)
+                    {
+                        buttonText.text = "저장*";
+                    }
+                }
+
+                // 편집 버튼들
+                bool hasData = editedData.Count > 0;
+                if (trimButton != null) trimButton.interactable = hasData;
+                if (exportButton != null) exportButton.interactable = hasData;
+            }
+
+            private void RefreshFileList()
+            {
+                if (fileListDropdown == null) return;
+
+                fileListDropdown.ClearOptions();
+
+                string[] files = Directory.GetFiles(Application.persistentDataPath, "*.csv");
+                List<string> fileNames = new List<string>();
+
+                foreach (string file in files)
+                {
+                    string fileName = Path.GetFileNameWithoutExtension(file);
+                    fileNames.Add(fileName);
+                }
+
+                if (fileNames.Count > 0)
+                {
+                    fileListDropdown.AddOptions(fileNames);
+                }
+                else
+                {
+                    fileListDropdown.AddOptions(new List<string> { "파일 없음" });
+                }
+            }
+
+            private void LoadSelectedFile()
+            {
+                if (fileListDropdown == null || fileListDropdown.options.Count == 0) return;
+
+                string selectedFile = fileListDropdown.options[fileListDropdown.value].text;
+
+                if (selectedFile != "파일 없음")
+                {
+                    LoadCSVFile(selectedFile);
+                }
+            }
+
+            private void DeleteSelectedFile()
+            {
+                if (fileListDropdown == null || fileListDropdown.options.Count == 0) return;
+
+                string selectedFile = fileListDropdown.options[fileListDropdown.value].text;
+
+                if (selectedFile != "파일 없음")
+                {
+                    string path = Path.Combine(Application.persistentDataPath, selectedFile + ".csv");
+
+                    if (File.Exists(path))
+                    {
+                        File.Delete(path);
+                        Debug.Log($"파일 삭제됨: {selectedFile}");
+                        RefreshFileList();
+                    }
+                }
+            }
+
+            private void OnLoopToggleChanged(bool value)
+            {
+                if (handPosePlayer != null)
+                {
+                    // Player에 루프 설정 전달
+                }
+            }
+
+            private void OnSnapToggleChanged(bool value)
+            {
+                // 스냅 설정 변경 시 현재 위치 재조정
+                if (value)
+                {
+                    currentTime = FindNearestKeyframeTime(currentTime);
+                    timelineSlider.value = currentTime;
+                }
+            }
+
+            private void OnGhostHandToggleChanged(bool value)
+            {
+                if (leftHandGhost != null)
+                {
+                    leftHandGhost.gameObject.SetActive(value);
+                }
+
+                if (rightHandGhost != null)
+                {
+                    rightHandGhost.gameObject.SetActive(value);
+                }
+
+                if (value)
+                {
+                    UpdateGhostHands();
+                }
+            }
+
+            private void OnPlaybackProgress(float progress)
+            {
+                // 플레이어로부터 진행률 업데이트 받기
+                if (!isPlaying) return;
+
+                currentTime = progress * totalDuration;
+                UpdateTimeDisplay();
+            }
+
+            private void OnPlaybackCompleted()
+            {
+                if (!loopToggle.isOn)
+                {
+                    StopPlayback();
+                }
+            }
+
+            void OnDestroy()
+            {
+                // 이벤트 해제
+                if (handPosePlayer != null)
+                {
+                    // 이벤트가 있는지 확인하고 해제
+                    var progressEvent = handPosePlayer.GetType().GetEvent("OnPlaybackProgress");
+                    if (progressEvent != null)
+                    {
+                        var field = handPosePlayer.GetType().GetField("OnPlaybackProgress",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                        if (field != null)
+                        {
+                            var eventDelegate = field.GetValue(handPosePlayer) as System.Delegate;
+                            if (eventDelegate != null)
                             {
-                                progressEvent.RemoveEventHandler(handPosePlayer, d);
+                                foreach (var d in eventDelegate.GetInvocationList())
+                                {
+                                    if (d.Target == this)
+                                    {
+                                        progressEvent.RemoveEventHandler(handPosePlayer, d);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    var completedEvent = handPosePlayer.GetType().GetEvent("OnPlaybackCompleted");
+                    if (completedEvent != null)
+                    {
+                        var field = handPosePlayer.GetType().GetField("OnPlaybackCompleted",
+                            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
+                        if (field != null)
+                        {
+                            var eventDelegate = field.GetValue(handPosePlayer) as System.Delegate;
+                            if (eventDelegate != null)
+                            {
+                                foreach (var d in eventDelegate.GetInvocationList())
+                                {
+                                    if (d.Target == this)
+                                    {
+                                        completedEvent.RemoveEventHandler(handPosePlayer, d);
+                                    }
+                                }
                             }
                         }
                     }
                 }
             }
 
-            var completedEvent = handPosePlayer.GetType().GetEvent("OnPlaybackCompleted");
-            if (completedEvent != null)
+            // 툴팁 컴포넌트 (선택사항)
+            [System.Serializable]
+            public class Tooltip : MonoBehaviour
             {
-                var field = handPosePlayer.GetType().GetField("OnPlaybackCompleted",
-                    System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Public);
-                if (field != null)
-                {
-                    var eventDelegate = field.GetValue(handPosePlayer) as System.Delegate;
-                    if (eventDelegate != null)
-                    {
-                        foreach (var d in eventDelegate.GetInvocationList())
-                        {
-                            if (d.Target == this)
-                            {
-                                completedEvent.RemoveEventHandler(handPosePlayer, d);
-                            }
-                        }
-                    }
-                }
+                public string text;
             }
-        }
-    }
-
-    // 툴팁 컴포넌트 (선택사항)
-    [System.Serializable]
-    public class Tooltip : MonoBehaviour
-    {
-        public string text;
-    }
+        }}
 }

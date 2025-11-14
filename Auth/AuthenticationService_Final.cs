@@ -8,9 +8,14 @@ using UnityEngine.Networking;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Cysharp.Threading.Tasks;
+using ChunaVR.Auth.Events;
+using ChunaVR.Auth.Data;
 
-/// <summary>
-/// Meta Quest 최적화 AuthenticationService - 완전판
+namespace ChunaVR.Auth
+{
+
+    /// <summary>
+    /// Meta Quest 최적화 AuthenticationService - 완전판
 /// 
 /// [개선 사항]
 /// - IAuthenticationService 인터페이스 구현
@@ -564,4 +569,4 @@ public class MockAuthenticationService : MonoBehaviour, IAuthenticationService
     {
         Debug.Log($"[MockService] API URL 변경: {newUrl}");
     }
-}
+}}
